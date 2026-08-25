@@ -1,0 +1,6 @@
+{
+  "name": "Story Today",
+  "description": "Clean and fresh citizen grievance and news publishing platform with instant in-app reading, web sharing, and bilingual support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

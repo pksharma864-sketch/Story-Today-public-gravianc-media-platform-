@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-editorial-dark: #004D40;
+    --color-editorial-light: #E0F2F1;
+    --color-editorial-bg: #FAFAFA;
+    --color-editorial-border: #E0E0E0;
+    --color-editorial-text: #1A1A1A;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: #FAFAFA;
+    color: #1A1A1A;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  img {
+    image-rendering: -webkit-optimize-contrast;
+  }
+
+  h1, h2, h3, h4, .font-serif {
+    font-family: 'Source Serif 4', Georgia, Cambria, 'Times New Roman', Times, serif;
+  }
+}
+
+/* Hide scrollbar for clean tab carousels */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Dropcap for editorial opening paragraph */
+.editorial-lead::first-letter {
+  font-family: 'Source Serif 4', Georgia, serif;
+  float: left;
+  font-size: 3.25rem;
+  line-height: 0.85;
+  padding-top: 4px;
+  padding-right: 8px;
+  padding-bottom: 2px;
+  font-weight: 700;
+  color: #004D40;
+}
+
+@media print {
+  #main-header,
+  #btn-back-to-feed,
+  #btn-detail-share,
+  #btn-listen-audio,
+  footer,
+  #btn-quick-copy-link,
+  #btn-print-view,
+  #btn-header-post,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
+
