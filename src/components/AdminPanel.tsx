@@ -201,8 +201,8 @@ export const AdminPanel: React.FC<Props> = ({
       if (!success) {
         setAuthError(
           lang === 'hi'
-            ? 'गलत पासवर्ड। डिफ़ॉल्ट पासवर्ड admin123 है।'
-            : 'Invalid password. Default passcode is admin123.'
+            ? 'अमान्य पासवर्ड। कृपया पुन: प्रयास करें।'
+            : 'Invalid admin passcode. Please try again.'
         );
       } else {
         setAuthError('');
@@ -415,7 +415,7 @@ export const AdminPanel: React.FC<Props> = ({
                   <input
                     id="input-admin-passcode"
                     type={showLoginPass ? 'text' : 'password'}
-                    placeholder="admin123"
+                    placeholder="••••••••"
                     value={passcode}
                     onChange={(e) => {
                       setPasscode(e.target.value);
@@ -1015,9 +1015,6 @@ export const AdminPanel: React.FC<Props> = ({
                           {lang === 'hi' ? 'वर्तमान एडमिन पासवर्ड' : 'Current Admin Password'}{' '}
                           <span className="text-red-500">*</span>
                         </label>
-                        <span className="text-[10px] text-gray-500 font-mono">
-                          {lang === 'hi' ? 'डिफ़ॉल्ट: admin123' : 'Default: admin123'}
-                        </span>
                       </div>
                       <div className="relative">
                         <input

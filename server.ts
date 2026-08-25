@@ -13,7 +13,7 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Initial default users
+// Initial default users (only clean administrator account, no demo reporter or demo citizen)
 const DEFAULT_USERS = [
   {
     id: 'user_admin',
@@ -24,173 +24,14 @@ const DEFAULT_USERS = [
     createdAt: new Date().toISOString(),
     status: 'active',
   },
-  {
-    id: 'user_reporter',
-    name: 'Rajesh Sharma (Staff Reporter)',
-    username: 'reporter',
-    password: 'reporter123',
-    role: 'reporter',
-    createdAt: new Date().toISOString(),
-    status: 'active',
-  },
-  {
-    id: 'user_citizen',
-    name: 'Sunita Verma (Citizen)',
-    username: 'citizen',
-    password: 'citizen123',
-    role: 'citizen',
-    createdAt: new Date().toISOString(),
-    status: 'active',
-  },
 ];
 
 if (!fs.existsSync(USERS_FILE)) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(DEFAULT_USERS, null, 2), 'utf-8');
 }
 
-// Initial default sample posts
-const DEFAULT_POSTS = [
-  {
-    id: 'mt7jcc2593ap',
-    type: 'grievance',
-    title: 'Severe Water Pipeline Leakage & Low Pressure in Ward 14',
-    titleHi: 'वार्ड 14 में मुख्य जल पाइपलाइन रिसाव और पेयजल आपूर्ति में गंभीर कमी',
-    content: 'The primary municipal water pipeline near Sector 4 community center has developed a significant rupture since Monday morning. Potable water is flooding the street causing waterlogging and leading to low pressure in more than 250 households in Ward 14. Residents request urgent repair and pipeline welding.',
-    contentHi: 'सेक्टर 4 कम्युनिटी सेंटर के पास मुख्य पेयजल पाइपलाइन में सोमवार सुबह से बड़ा रिसाव हो रहा है। सड़क पर हजारों लीटर पीने का पानी बह रहा है और वार्ड 14 के 250 से अधिक घरों में पानी का दबाव बहुत कम हो गया है। स्थानीय नागरिकों ने जल विभाग से तत्काल मरम्मत का अनुरोध किया है।',
-    category: 'water_supply',
-    location: {
-      city: 'Jaipur',
-      area: 'Sector 4, Mansarovar',
-      ward: 'Ward 14',
-      landmark: 'Near Community Park & Water Tank',
-    },
-    authorName: 'Sunita Verma',
-    authorRole: 'Ward 14 Resident',
-    imageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=1200&q=80',
-    createdAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
-    updatedAt: new Date().toISOString(),
-    views: 142,
-    upvotes: 28,
-    isPinned: true,
-    isBreaking: false,
-    approvalStatus: 'approved',
-    approvedBy: 'Chief Editor & Admin',
-    approvedAt: new Date(Date.now() - 20 * 3600 * 1000).toISOString(),
-    status: 'in_progress',
-    priority: 'urgent',
-    referenceNumber: 'ST-GR-7281',
-    statusHistory: [
-      {
-        status: 'submitted',
-        note: 'Citizen grievance submitted on civic portal.',
-        timestamp: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
-        updatedBy: 'Sunita Verma',
-      },
-      {
-        status: 'under_review',
-        note: 'Verified by Ward Field Inspector. Forwarded to Municipal Water Supply Maintenance Cell.',
-        timestamp: new Date(Date.now() - 18 * 3600 * 1000).toISOString(),
-        updatedBy: 'Jaipur Jal Board',
-      },
-      {
-        status: 'in_progress',
-        note: 'Maintenance repair team dispatched with replacement gasket valves.',
-        timestamp: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
-        updatedBy: 'Municipal Works Engineer',
-      },
-    ],
-    officialResponse: {
-      department: 'Public Health Engineering Department (PHED)',
-      message: 'Repair work is currently underway. Valve replacement scheduled for completion by 6:00 PM today.',
-      timestamp: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
-      officerName: 'Er. R. K. Meena (Executive Engineer)',
-    },
-    comments: [
-      {
-        id: 'c1',
-        author: 'Mahesh Sharma',
-        text: 'Thank you for raising this issue. We have faced low water pressure for 3 days.',
-        createdAt: new Date(Date.now() - 14 * 3600 * 1000).toISOString(),
-      },
-    ],
-  },
-  {
-    id: 'news-metro-expansion-2026',
-    type: 'news',
-    title: 'New High-Speed Feeder Bus Routes Launched Across Municipal Suburbs',
-    titleHi: 'नगर निगम उपनगरों में नए हाई-स्पीड फीडर बस रूट शुरू',
-    content: 'The City Transport Corporation has inaugurated 12 new electric feeder bus routes connecting suburban metro terminals with major residential colonies and health clinics. The buses are equipped with GPS tracking and contactless ticketing.',
-    contentHi: 'नगर परिवहन निगम ने उपनगरीय मेट्रो स्टेशनों को प्रमुख आवासीय कॉलोनियों और स्वास्थ्य केंद्रों से जोड़ने वाले 12 नए इलेक्ट्रिक फीडर बस रूट का शुभारंभ किया है। बसों में जीपीएस और डिजिटल टिकटिंग की सुविधा उपलब्ध है।',
-    category: 'transport',
-    location: {
-      city: 'Delhi NCR',
-      area: 'Suburban Transit Hub',
-    },
-    authorName: 'Rajesh Sharma',
-    authorRole: 'Senior Staff Reporter',
-    imageUrl: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=1200&q=80',
-    createdAt: new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
-    updatedAt: new Date().toISOString(),
-    views: 310,
-    upvotes: 45,
-    isPinned: false,
-    isBreaking: true,
-    approvalStatus: 'approved',
-    approvedBy: 'Chief Editor & Admin',
-    approvedAt: new Date(Date.now() - 46 * 3600 * 1000).toISOString(),
-    comments: [],
-  },
-  {
-    id: 'gr-pothole-ringroad-01',
-    type: 'grievance',
-    title: 'Hazardous Open Pothole at Main Bypass Junction Repaired Successfully',
-    titleHi: 'मुख्य बाईपास चौराहे पर खतरनाक गड्ढे की मरम्मत पूरी, यातायात सुचारू',
-    content: 'Following community citizen reports on the portal, the Highway Authority and Municipal Works department completed full macadam resurfacing of the deep trench at the Ring Road junction within 48 hours.',
-    contentHi: 'नागरिक पोर्टल पर शिकायत दर्ज होने के 48 घंटों के भीतर नगर निगम लोक निर्माण विभाग ने रिंग रोड जंक्शन पर गहरे गड्ढे की डामरीकरण मरम्मत सफलतापूर्वक पूरी कर दी है।',
-    category: 'roads',
-    location: {
-      city: 'Indore',
-      area: 'Ring Road Bypass',
-      ward: 'Ward 8',
-    },
-    authorName: 'Amit Joshi',
-    authorRole: 'Citizen Resident',
-    imageUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=1200&q=80',
-    createdAt: new Date(Date.now() - 72 * 3600 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 12 * 3600 * 1000).toISOString(),
-    views: 245,
-    upvotes: 62,
-    isPinned: false,
-    isBreaking: false,
-    approvalStatus: 'approved',
-    approvedBy: 'Chief Editor & Admin',
-    approvedAt: new Date(Date.now() - 70 * 3600 * 1000).toISOString(),
-    status: 'resolved',
-    priority: 'high',
-    referenceNumber: 'ST-GR-5912',
-    statusHistory: [
-      {
-        status: 'submitted',
-        note: 'Citizen grievance submitted.',
-        timestamp: new Date(Date.now() - 72 * 3600 * 1000).toISOString(),
-        updatedBy: 'Amit Joshi',
-      },
-      {
-        status: 'resolved',
-        note: 'Road repair and bitumen sealing completed by PWD contractor.',
-        timestamp: new Date(Date.now() - 12 * 3600 * 1000).toISOString(),
-        updatedBy: 'Municipal PWD Inspector',
-      },
-    ],
-    officialResponse: {
-      department: 'Public Works Department (PWD)',
-      message: 'Resurfacing completed. Junction is now safe for vehicular traffic.',
-      timestamp: new Date(Date.now() - 12 * 3600 * 1000).toISOString(),
-      officerName: 'Vijay Deshmukh (PWD Supervisor)',
-    },
-    comments: [],
-  },
-];
+// Initial clean posts (no demo articles, demo grievances, or demo complaints)
+const DEFAULT_POSTS: any[] = [];
 
 if (!fs.existsSync(DATA_FILE)) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(DEFAULT_POSTS, null, 2), 'utf-8');
@@ -200,11 +41,15 @@ function readUsers(): any[] {
   try {
     if (fs.existsSync(USERS_FILE)) {
       const raw = fs.readFileSync(USERS_FILE, 'utf-8');
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
     }
   } catch (err) {
     console.error('Error reading users file:', err);
   }
+  writeUsers(DEFAULT_USERS);
   return DEFAULT_USERS;
 }
 
@@ -223,16 +68,14 @@ function readPosts(): any[] {
     if (fs.existsSync(DATA_FILE)) {
       const raw = fs.readFileSync(DATA_FILE, 'utf-8');
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed;
       }
     }
   } catch (err) {
     console.error('Error reading posts file:', err);
   }
-  // Initialize with DEFAULT_POSTS
-  writePosts(DEFAULT_POSTS);
-  return DEFAULT_POSTS;
+  return [];
 }
 
 function writePosts(posts: any[]): boolean {

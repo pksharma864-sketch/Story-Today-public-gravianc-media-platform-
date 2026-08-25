@@ -8,17 +8,14 @@ import {
   Lock,
   LogIn,
   UserPlus,
-  Shield,
-  ShieldCheck,
   AlertCircle,
-  Sparkles,
   CheckCircle2,
   Eye,
   EyeOff,
-  Newspaper,
   Check,
-  Mail,
+  Newspaper,
   UserCheck,
+  Mail,
 } from 'lucide-react';
 
 interface Props {
@@ -166,12 +163,6 @@ export const UserLoginModal: React.FC<Props> = ({
     }
   };
 
-  const handleQuickFill = (u: string, p: string) => {
-    setLoginUsername(u);
-    setLoginPassword(p);
-    setErrorMsg('');
-  };
-
   return (
     <div
       id="user-auth-modal-backdrop"
@@ -293,7 +284,7 @@ export const UserLoginModal: React.FC<Props> = ({
                   id="input-login-username"
                   type="text"
                   required
-                  placeholder={lang === 'hi' ? 'उदा. reporter, citizen या admin' : 'e.g. reporter, citizen, or your username'}
+                  placeholder={lang === 'hi' ? 'अपना यूज़रनेम या ईमेल दर्ज करें' : 'Enter username or email'}
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
                   className="w-full text-xs sm:text-sm pl-9 pr-3 py-2.5 rounded-lg border border-[#E0E0E0] focus:border-[#004D40] focus:outline-hidden bg-white font-medium text-gray-800"
@@ -333,7 +324,7 @@ export const UserLoginModal: React.FC<Props> = ({
               type="submit"
               id="btn-submit-user-login"
               disabled={isLoading}
-              className="w-full py-2.5 bg-[#004D40] hover:bg-[#00382E] text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-xs transition-colors flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
+              className="w-full py-2.5 bg-[#004D40] hover:bg-[#00382E] text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-xs transition-colors flex items-center justify-center gap-2 mt-2 disabled:opacity-50 cursor-pointer"
             >
               <LogIn className="w-4 h-4 text-[#E0F2F1]" />
               <span>
@@ -348,7 +339,7 @@ export const UserLoginModal: React.FC<Props> = ({
             </button>
 
             {/* Switch to Register link */}
-            <div className="text-center pt-1">
+            <div className="text-center pt-2">
               <button
                 type="button"
                 onClick={() => {
@@ -362,52 +353,6 @@ export const UserLoginModal: React.FC<Props> = ({
                   ? 'नया खाता बनाना चाहते हैं? यहां क्लिक करें →'
                   : "Don't have an account? Create one now →"}
               </button>
-            </div>
-
-            {/* Quick Demo Accounts Helper */}
-            <div className="pt-3 border-t border-[#E0E0E0] space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                <span className="flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-600" />
-                  {lang === 'hi' ? 'त्वरित डेमो खाते:' : 'Demo Quick Login Accounts:'}
-                </span>
-                <span className="text-[10px] text-gray-400 lowercase">click to test</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-[11px]">
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('admin', 'admin123')}
-                  className="p-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg text-amber-900 font-medium text-left transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-1 font-bold text-xs">
-                    <Shield className="w-3 h-3 text-amber-700" />
-                    Admin
-                  </div>
-                  <span className="text-[10px] text-amber-700 font-mono">admin123</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('reporter', 'reporter123')}
-                  className="p-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-emerald-900 font-medium text-left transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-1 font-bold text-xs">
-                    <Newspaper className="w-3 h-3 text-emerald-700" />
-                    Reporter
-                  </div>
-                  <span className="text-[10px] text-emerald-700 font-mono">reporter123</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('citizen', 'citizen123')}
-                  className="p-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-blue-900 font-medium text-left transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-1 font-bold text-xs">
-                    <User className="w-3 h-3 text-blue-700" />
-                    Citizen
-                  </div>
-                  <span className="text-[10px] text-blue-700 font-mono">citizen123</span>
-                </button>
-              </div>
             </div>
           </form>
         ) : (

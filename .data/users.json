@@ -1,0 +1,11 @@
+[
+  {
+    "id": "user_admin",
+    "name": "Chief Editor & Admin",
+    "username": "admin",
+    "password": "admin123",
+    "role": "admin",
+    "createdAt": "2026-08-25T20:09:37.204Z",
+    "status": "active"
+  }
+]
