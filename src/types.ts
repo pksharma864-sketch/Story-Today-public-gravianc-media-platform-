@@ -30,6 +30,7 @@ export interface OfficialResponse {
 export interface PostComment {
   id: string;
   author: string;
+  authorAvatar?: string;
   text: string;
   createdAt: string;
   isOfficial?: boolean;
@@ -46,6 +47,7 @@ export interface PostItem {
   category: string;
   location: LocationInfo;
   authorName: string;
+  authorAvatar?: string;
   authorPhone?: string;
   authorRole?: string; // e.g. "Citizen", "Local Reporter", "Ward Resident"
   authorId?: string;
@@ -77,10 +79,13 @@ export interface UserAccount {
   name: string;
   username: string;
   role: UserRole;
+  avatar?: string;
   password?: string;
   createdAt: string;
   status: 'active' | 'suspended';
   email?: string;
+  phone?: string;
+  bio?: string;
 }
 
 export interface AppStats {

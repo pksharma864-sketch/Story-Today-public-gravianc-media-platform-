@@ -3,9 +3,10 @@
     "id": "user_admin",
     "name": "Chief Editor & Admin",
     "username": "admin",
-    "password": "admin123",
+    "password": "admin",
     "role": "admin",
-    "createdAt": "2026-08-25T20:09:37.204Z",
-    "status": "active"
+    "createdAt": "2026-08-26T10:31:30.472Z",
+    "status": "active",
+    "updatedAt": "2026-08-26T10:32:02.995Z"
   }
 ]

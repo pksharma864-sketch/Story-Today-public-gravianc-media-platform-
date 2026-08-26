@@ -8,6 +8,8 @@ import {
   deleteUser,
   changeAdminPassword,
   updatePostApproval,
+  updateBrandingLogo,
+  fetchSettings,
 } from '../lib/api';
 import {
   ShieldCheck,
@@ -92,6 +94,7 @@ export const AdminPanel: React.FC<Props> = ({
   const [showNewUserPass, setShowNewUserPass] = useState(false);
   const [newUserRole, setNewUserRole] = useState<UserRole>('reporter');
   const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserAvatar, setNewUserAvatar] = useState<string | null>(null);
   const [userActionMsg, setUserActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Password Management State
@@ -150,6 +153,14 @@ export const AdminPanel: React.FC<Props> = ({
     const saved = localStorage.getItem('story_today_custom_logo');
     if (saved) setCurrentLogo(saved);
 
+    fetchSettings().then((settings) => {
+      if (settings.customLogo) {
+        setCurrentLogo(settings.customLogo);
+        localStorage.setItem('story_today_custom_logo', settings.customLogo);
+        window.dispatchEvent(new Event('storage'));
+      }
+    });
+
     if (isAdmin) {
       loadUsers();
     }
@@ -171,12 +182,13 @@ export const AdminPanel: React.FC<Props> = ({
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
+      reader.onload = async (uploadEvent) => {
         const base64 = uploadEvent.target?.result as string;
         if (base64) {
           localStorage.setItem('story_today_custom_logo', base64);
           setCurrentLogo(base64);
-          setLogoUploadedMsg('Custom logo updated successfully!');
+          await updateBrandingLogo(base64);
+          setLogoUploadedMsg('Custom logo updated and saved permanently to database!');
           setTimeout(() => setLogoUploadedMsg(''), 4000);
           window.dispatchEvent(new Event('storage'));
         }
@@ -185,10 +197,11 @@ export const AdminPanel: React.FC<Props> = ({
     }
   };
 
-  const handleResetLogo = () => {
+  const handleResetLogo = async () => {
     localStorage.removeItem('story_today_custom_logo');
     setCurrentLogo(null);
-    setLogoUploadedMsg('Logo reset to default /logo.png vector emblem.');
+    await updateBrandingLogo(null);
+    setLogoUploadedMsg('Logo reset to default vector emblem.');
     setTimeout(() => setLogoUploadedMsg(''), 4000);
     window.dispatchEvent(new Event('storage'));
   };
@@ -256,6 +269,7 @@ export const AdminPanel: React.FC<Props> = ({
         password: newUserPassword.trim(),
         role: newUserRole,
         email: newUserEmail.trim() || undefined,
+        avatar: newUserAvatar || undefined,
       });
 
       if (res.success) {
@@ -264,6 +278,7 @@ export const AdminPanel: React.FC<Props> = ({
         setNewUserUsername('');
         setNewUserPassword('');
         setNewUserEmail('');
+        setNewUserAvatar(null);
         setShowAddUserForm(false);
         await loadUsers();
         setTimeout(() => setUserActionMsg(null), 4000);
@@ -622,9 +637,23 @@ export const AdminPanel: React.FC<Props> = ({
                                   {post.type === 'grievance' ? '📢 Grievance' : '📰 News Article'}
                                 </span>
 
-                                <span className="text-gray-500 font-medium">
-                                  by <strong className="text-gray-800">{post.authorName}</strong> ({post.authorRole || 'Citizen'})
-                                </span>
+                                <div className="flex items-center gap-1.5 text-gray-500 font-medium">
+                                  <div className="w-4 h-4 rounded-full overflow-hidden bg-[#004D40] text-white flex items-center justify-center text-[8px] font-bold shrink-0 border border-gray-300">
+                                    {post.authorAvatar ? (
+                                      <img
+                                        src={post.authorAvatar}
+                                        alt={post.authorName}
+                                        className="w-full h-full object-cover"
+                                        referrerPolicy="no-referrer"
+                                      />
+                                    ) : (
+                                      <span>{post.authorName.charAt(0).toUpperCase()}</span>
+                                    )}
+                                  </div>
+                                  <span>
+                                    by <strong className="text-gray-800">{post.authorName}</strong> ({post.authorRole || 'Citizen'})
+                                  </span>
+                                </div>
 
                                 <span className="text-gray-400">•</span>
                                 <span className="text-gray-500">
@@ -885,6 +914,47 @@ export const AdminPanel: React.FC<Props> = ({
                         />
                       </div>
 
+                      {/* Optional Profile Photo for new user */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                          Profile Photo (Optional)
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 text-gray-700 flex items-center justify-center font-bold text-xs border border-gray-300 shrink-0">
+                            {newUserAvatar ? (
+                              <img src={newUserAvatar} alt="New user" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            ) : (
+                              <span>{newUserName ? newUserName.charAt(0).toUpperCase() : '?'}</span>
+                            )}
+                          </div>
+                          <label className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 rounded-md text-xs font-bold text-gray-700 cursor-pointer transition-colors shadow-2xs">
+                            <Upload className="w-3.5 h-3.5 text-[#004D40]" />
+                            <span>Upload Avatar</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = (ev) => setNewUserAvatar(ev.target?.result as string);
+                                reader.readAsDataURL(file);
+                              }}
+                              className="hidden"
+                            />
+                          </label>
+                          {newUserAvatar && (
+                            <button
+                              type="button"
+                              onClick={() => setNewUserAvatar(null)}
+                              className="text-xs text-red-600 hover:underline font-medium"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
                       <div className="flex justify-end gap-2 pt-2">
                         <button
                           type="button"
@@ -920,8 +990,24 @@ export const AdminPanel: React.FC<Props> = ({
                           {usersList.map((u) => (
                             <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                               <td className="p-3">
-                                <div className="font-bold text-gray-900">{u.name}</div>
-                                {u.email && <div className="text-[11px] text-gray-500">{u.email}</div>}
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-8 h-8 rounded-full overflow-hidden bg-[#004D40] text-white flex items-center justify-center text-xs font-bold shrink-0 border border-gray-300">
+                                    {u.avatar ? (
+                                      <img
+                                        src={u.avatar}
+                                        alt={u.name}
+                                        className="w-full h-full object-cover"
+                                        referrerPolicy="no-referrer"
+                                      />
+                                    ) : (
+                                      <span>{u.name.charAt(0).toUpperCase()}</span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div className="font-bold text-gray-900">{u.name}</div>
+                                    {u.email && <div className="text-[11px] text-gray-500">{u.email}</div>}
+                                  </div>
+                                </div>
                               </td>
                               <td className="p-3 font-mono text-gray-700">
                                 {u.username}

@@ -2,6 +2,18 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  query,
+  Firestore,
+} from 'firebase/firestore';
 
 const PORT = 3000;
 const DATA_DIR = path.join(process.cwd(), '.data');
@@ -13,107 +25,262 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Initial default users (only clean administrator account, no demo reporter or demo citizen)
-const DEFAULT_USERS = [
-  {
-    id: 'user_admin',
-    name: 'Chief Editor & Admin',
-    username: 'admin',
-    password: 'admin123',
-    role: 'admin',
-    createdAt: new Date().toISOString(),
-    status: 'active',
-  },
-];
-
-if (!fs.existsSync(USERS_FILE)) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(DEFAULT_USERS, null, 2), 'utf-8');
+// Load Firebase Config
+let firebaseConfig: any = {};
+try {
+  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  }
+} catch (err) {
+  console.error('Error reading firebase-applet-config.json:', err);
 }
 
-// Initial clean posts (no demo articles, demo grievances, or demo complaints)
-const DEFAULT_POSTS: any[] = [];
-
-if (!fs.existsSync(DATA_FILE)) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(DEFAULT_POSTS, null, 2), 'utf-8');
+// Initialize Firebase App & Firestore
+let db: Firestore | null = null;
+try {
+  const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+  const dbId =
+    firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId.trim() !== ''
+      ? firebaseConfig.firestoreDatabaseId
+      : undefined;
+  db = getFirestore(app, dbId);
+  console.log(`[Firebase] Firestore connected with database ID: ${dbId || '(default)'}`);
+} catch (err) {
+  console.error('[Firebase] Error initializing Firestore:', err);
 }
 
-function readUsers(): any[] {
+// In-Memory & Local Cache
+let cachedUsers: any[] = [];
+let cachedPosts: any[] = [];
+let cachedSettings: { adminPassword?: string; customLogo?: string | null } = {
+  adminPassword: 'admin',
+};
+
+// Initial default clean admin account (if database is completely fresh)
+const INITIAL_ADMIN_USER = {
+  id: 'user_admin',
+  name: 'Chief Editor & Admin',
+  username: 'admin',
+  password: 'admin',
+  role: 'admin',
+  createdAt: new Date().toISOString(),
+  status: 'active',
+};
+
+// =========================================================================
+// FIRESTORE PERSISTENCE HELPERS
+// =========================================================================
+
+async function initFirestoreData() {
+  console.log('[Persistence] Loading data from Firestore cloud database...');
+
+  if (!db) {
+    console.warn('[Persistence] Firestore not initialized, loading from local backup.');
+    loadLocalFallback();
+    return;
+  }
+
+  try {
+    // 1. Load Admin Settings (password, branding)
+    const settingsDoc = await getDoc(doc(db, 'settings', 'admin_settings'));
+    if (settingsDoc.exists()) {
+      cachedSettings = settingsDoc.data() as any;
+      console.log('[Persistence] Admin settings retrieved from Firestore.');
+    } else {
+      cachedSettings = { adminPassword: 'admin' };
+      await setDoc(doc(db, 'settings', 'admin_settings'), cachedSettings);
+    }
+
+    // 2. Load Users
+    const usersSnap = await getDocs(collection(db, 'users'));
+    if (!usersSnap.empty) {
+      cachedUsers = usersSnap.docs.map((d) => d.data());
+      console.log(`[Persistence] Loaded ${cachedUsers.length} user accounts from Firestore.`);
+    } else {
+      console.log('[Persistence] Users collection empty. Provisioning initial admin user.');
+      cachedUsers = [INITIAL_ADMIN_USER];
+      await setDoc(doc(db, 'users', INITIAL_ADMIN_USER.id), INITIAL_ADMIN_USER);
+    }
+
+    // Ensure user_admin has synchronized password
+    const adminIdx = cachedUsers.findIndex((u) => u.role === 'admin' || u.username === 'admin');
+    if (adminIdx !== -1 && cachedSettings.adminPassword) {
+      cachedUsers[adminIdx].password = cachedSettings.adminPassword;
+    }
+
+    // 3. Load Posts
+    const postsSnap = await getDocs(collection(db, 'posts'));
+    if (!postsSnap.empty) {
+      cachedPosts = postsSnap.docs.map((d) => d.data());
+      console.log(`[Persistence] Loaded ${cachedPosts.length} posts from Firestore.`);
+    } else {
+      cachedPosts = [];
+      console.log('[Persistence] Posts collection in Firestore is clean and ready.');
+    }
+
+    // Save local snapshot
+    syncToLocalDisk();
+  } catch (err) {
+    console.error('[Persistence] Error syncing with Firestore on boot:', err);
+    loadLocalFallback();
+  }
+}
+
+function loadLocalFallback() {
   try {
     if (fs.existsSync(USERS_FILE)) {
       const raw = fs.readFileSync(USERS_FILE, 'utf-8');
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
+      cachedUsers = JSON.parse(raw);
+    } else {
+      cachedUsers = [INITIAL_ADMIN_USER];
     }
-  } catch (err) {
-    console.error('Error reading users file:', err);
+  } catch {
+    cachedUsers = [INITIAL_ADMIN_USER];
   }
-  writeUsers(DEFAULT_USERS);
-  return DEFAULT_USERS;
-}
 
-function writeUsers(users: any[]): boolean {
-  try {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
-    return true;
-  } catch (err) {
-    console.error('Error writing users file:', err);
-    return false;
-  }
-}
-
-function readPosts(): any[] {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed;
-      }
+      cachedPosts = JSON.parse(raw);
+    } else {
+      cachedPosts = [];
     }
-  } catch (err) {
-    console.error('Error reading posts file:', err);
+  } catch {
+    cachedPosts = [];
   }
-  return [];
 }
 
-function writePosts(posts: any[]): boolean {
+function syncToLocalDisk() {
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(posts, null, 2), 'utf-8');
-    return true;
+    fs.writeFileSync(USERS_FILE, JSON.stringify(cachedUsers, null, 2), 'utf-8');
+    fs.writeFileSync(DATA_FILE, JSON.stringify(cachedPosts, null, 2), 'utf-8');
   } catch (err) {
-    console.error('Error writing posts file:', err);
-    return false;
+    console.error('[Persistence] Error writing local cache backup:', err);
   }
 }
+
+// User Persistence Operations
+async function persistUser(user: any) {
+  const idx = cachedUsers.findIndex((u) => u.id === user.id);
+  if (idx !== -1) {
+    cachedUsers[idx] = user;
+  } else {
+    cachedUsers.push(user);
+  }
+  syncToLocalDisk();
+
+  if (db) {
+    try {
+      await setDoc(doc(db, 'users', user.id), user);
+      console.log(`[Firestore] User saved: ${user.username} (${user.id})`);
+    } catch (err) {
+      console.error(`[Firestore] Failed to persist user ${user.id}:`, err);
+    }
+  }
+}
+
+async function removeUser(userId: string) {
+  cachedUsers = cachedUsers.filter((u) => u.id !== userId);
+  syncToLocalDisk();
+
+  if (db) {
+    try {
+      await deleteDoc(doc(db, 'users', userId));
+      console.log(`[Firestore] User deleted: ${userId}`);
+    } catch (err) {
+      console.error(`[Firestore] Failed to delete user ${userId}:`, err);
+    }
+  }
+}
+
+// Post Persistence Operations
+async function persistPost(post: any) {
+  const idx = cachedPosts.findIndex((p) => p.id === post.id);
+  if (idx !== -1) {
+    cachedPosts[idx] = post;
+  } else {
+    cachedPosts.unshift(post);
+  }
+  syncToLocalDisk();
+
+  if (db) {
+    try {
+      await setDoc(doc(db, 'posts', post.id), post);
+      console.log(`[Firestore] Post saved: ${post.title?.slice(0, 30)} (${post.id})`);
+    } catch (err) {
+      console.error(`[Firestore] Failed to persist post ${post.id}:`, err);
+    }
+  }
+}
+
+async function removePost(postId: string) {
+  cachedPosts = cachedPosts.filter((p) => p.id !== postId);
+  syncToLocalDisk();
+
+  if (db) {
+    try {
+      await deleteDoc(doc(db, 'posts', postId));
+      console.log(`[Firestore] Post deleted: ${postId}`);
+    } catch (err) {
+      console.error(`[Firestore] Failed to delete post ${postId}:`, err);
+    }
+  }
+}
+
+// Admin Settings Persistence
+async function persistAdminSettings(settings: any) {
+  cachedSettings = { ...cachedSettings, ...settings, updatedAt: new Date().toISOString() };
+  if (db) {
+    try {
+      await setDoc(doc(db, 'settings', 'admin_settings'), cachedSettings);
+      console.log('[Firestore] Admin settings updated.');
+    } catch (err) {
+      console.error('[Firestore] Failed to persist admin settings:', err);
+    }
+  }
+}
+
+// =========================================================================
+// EXPRESS SERVER SETUP & ROUTING
+// =========================================================================
 
 async function startServer() {
+  // Initialize Firestore connection and data cache
+  await initFirestoreData();
+
   const app = express();
   app.use(express.json({ limit: '15mb' }));
   app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-  // API Health
+  // API Health & Persistence Status
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', time: new Date().toISOString() });
+    res.json({
+      status: 'ok',
+      database: db ? 'firebase_firestore_connected' : 'local_fallback',
+      postsCount: cachedPosts.length,
+      usersCount: cachedUsers.length,
+      time: new Date().toISOString(),
+    });
   });
 
   // ==========================================
   // AUTH & USER MANAGEMENT APIs
   // ==========================================
 
-  // User Login
-  app.post('/api/auth/login', (req, res) => {
+  // User Login (Authenticates against persistent users in Firestore)
+  app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
       return res.status(400).json({ success: false, error: 'Username and password are required' });
     }
 
-    const users = readUsers();
-    const user = users.find(
+    const cleanUser = username.trim().toLowerCase();
+
+    // Verify user in cached users (synced with Firestore)
+    const user = cachedUsers.find(
       (u) =>
-        (u.username.toLowerCase() === username.trim().toLowerCase() ||
-          u.email?.toLowerCase() === username.trim().toLowerCase()) &&
+        (u.username.toLowerCase() === cleanUser || u.email?.toLowerCase() === cleanUser) &&
         u.password === password
     );
 
@@ -130,8 +297,8 @@ async function startServer() {
     res.json({ success: true, user: safeUser });
   });
 
-  // Change Admin Password
-  app.post('/api/auth/change-admin-password', (req, res) => {
+  // Change Admin Password (Permanently saves to Firestore database)
+  app.post('/api/auth/change-admin-password', async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ success: false, error: 'Current and new password are required' });
@@ -141,14 +308,11 @@ async function startServer() {
       return res.status(400).json({ success: false, error: 'New password must be at least 4 characters long' });
     }
 
-    const users = readUsers();
-    let adminIndex = users.findIndex((u) => u.role === 'admin' || u.username === 'admin');
+    let adminIndex = cachedUsers.findIndex((u) => u.role === 'admin' || u.username === 'admin');
 
     if (adminIndex === -1) {
-      if (currentPassword !== 'admin123' && currentPassword !== 'admin') {
-        return res.status(401).json({ success: false, error: 'Current admin password does not match' });
-      }
-      users.unshift({
+      // Create admin user with new password
+      const newAdminUser = {
         id: 'user_admin',
         name: 'Chief Editor & Admin',
         username: 'admin',
@@ -156,29 +320,122 @@ async function startServer() {
         role: 'admin',
         createdAt: new Date().toISOString(),
         status: 'active',
-      });
-    } else {
-      if (users[adminIndex].password !== currentPassword && currentPassword !== 'admin123') {
-        return res.status(401).json({ success: false, error: 'Current admin password does not match' });
-      }
-      users[adminIndex].password = newPassword.trim();
+      };
+      await persistUser(newAdminUser);
+      await persistAdminSettings({ adminPassword: newPassword.trim() });
+      return res.json({ success: true, message: 'Admin password updated permanently.' });
     }
 
-    writeUsers(users);
+    const currentAdminUser = cachedUsers[adminIndex];
+    if (currentAdminUser.password !== currentPassword && cachedSettings.adminPassword !== currentPassword) {
+      return res.status(401).json({ success: false, error: 'Current admin password does not match' });
+    }
 
-    res.json({ success: true, message: 'Admin password updated successfully' });
+    // Update password permanently in Firestore
+    currentAdminUser.password = newPassword.trim();
+    currentAdminUser.updatedAt = new Date().toISOString();
+    await persistUser(currentAdminUser);
+    await persistAdminSettings({ adminPassword: newPassword.trim() });
+
+    console.log('[Auth] Admin password changed permanently in Firestore.');
+    res.json({ success: true, message: 'Admin password updated and saved permanently to cloud database.' });
   });
 
   // List all users (Admin)
   app.get('/api/users', (req, res) => {
-    const users = readUsers();
-    const safeUsers = users.map(({ password, ...safe }) => safe);
+    const safeUsers = cachedUsers.map(({ password, ...safe }) => safe);
     res.json({ success: true, users: safeUsers });
   });
 
-  // Create new user account (Admin)
-  app.post('/api/users', (req, res) => {
-    const { name, username, password, role, email } = req.body;
+  // Get specific user profile
+  app.get('/api/users/:id', (req, res) => {
+    const user = cachedUsers.find((u) => u.id === req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    const { password: _, ...safeUser } = user;
+    res.json({ success: true, user: safeUser });
+  });
+
+  // Update user profile (Name, email, avatar, phone, bio)
+  app.put('/api/users/:id', async (req, res) => {
+    const { id } = req.params;
+    const userIndex = cachedUsers.findIndex((u) => u.id === id);
+
+    if (userIndex === -1) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const { name, email, avatar, phone, bio } = req.body;
+    const currentUser = cachedUsers[userIndex];
+
+    if (name && name.trim()) {
+      currentUser.name = name.trim();
+    }
+    if (email !== undefined) {
+      currentUser.email = email ? email.trim() : undefined;
+    }
+    if (avatar !== undefined) {
+      currentUser.avatar = avatar ? avatar.trim() : undefined;
+    }
+    if (phone !== undefined) {
+      currentUser.phone = phone ? phone.trim() : undefined;
+    }
+    if (bio !== undefined) {
+      currentUser.bio = bio ? bio.trim() : undefined;
+    }
+
+    currentUser.updatedAt = new Date().toISOString();
+    await persistUser(currentUser);
+
+    // Also retroactively update authorAvatar on posts created by this user
+    if (avatar !== undefined) {
+      cachedPosts.forEach((post) => {
+        if (post.authorId === id) {
+          post.authorAvatar = avatar ? avatar.trim() : undefined;
+        }
+      });
+      syncToLocalDisk();
+    }
+
+    const { password: _, ...safeUser } = currentUser;
+    res.json({ success: true, user: safeUser, message: 'Profile updated successfully.' });
+  });
+
+  // Update user profile photo specifically
+  app.post('/api/users/:id/avatar', async (req, res) => {
+    const { id } = req.params;
+    const { avatar } = req.body;
+    const userIndex = cachedUsers.findIndex((u) => u.id === id);
+
+    if (userIndex === -1) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const user = cachedUsers[userIndex];
+    user.avatar = avatar && avatar.trim() !== '' ? avatar.trim() : undefined;
+    user.updatedAt = new Date().toISOString();
+    await persistUser(user);
+
+    // Update avatar on existing posts authored by this user
+    cachedPosts.forEach((post) => {
+      if (post.authorId === id) {
+        post.authorAvatar = user.avatar;
+      }
+    });
+    syncToLocalDisk();
+
+    const { password: _, ...safeUser } = user;
+    res.json({
+      success: true,
+      user: safeUser,
+      message: avatar ? 'Profile photo uploaded successfully.' : 'Profile photo removed.',
+    });
+  });
+
+  // Create new user account (Admin or Registration)
+  app.post('/api/users', async (req, res) => {
+    const { name, username, password, role, email, avatar, phone, bio } = req.body;
 
     if (!name || !username || !password || !role) {
       return res.status(400).json({
@@ -187,10 +444,9 @@ async function startServer() {
       });
     }
 
-    const users = readUsers();
     const cleanUsername = username.trim().toLowerCase();
 
-    if (users.some((u) => u.username.toLowerCase() === cleanUsername)) {
+    if (cachedUsers.some((u) => u.username.toLowerCase() === cleanUsername)) {
       return res.status(400).json({ success: false, error: 'Username already exists. Please choose another.' });
     }
 
@@ -200,36 +456,54 @@ async function startServer() {
       username: cleanUsername,
       password: password.trim(),
       role: role || 'citizen',
+      avatar: avatar?.trim() || undefined,
       email: email?.trim() || undefined,
+      phone: phone?.trim() || undefined,
+      bio: bio?.trim() || undefined,
       createdAt: new Date().toISOString(),
       status: 'active',
     };
 
-    users.push(newUser);
-    writeUsers(users);
+    await persistUser(newUser);
 
     const { password: _, ...safeUser } = newUser;
     res.status(201).json({ success: true, user: safeUser });
   });
 
   // Delete user account (Admin)
-  app.delete('/api/users/:id', (req, res) => {
+  app.delete('/api/users/:id', async (req, res) => {
     const { id } = req.params;
-    let users = readUsers();
+    const userToDelete = cachedUsers.find((u) => u.id === id);
 
-    const userToDelete = users.find((u) => u.id === id);
     if (!userToDelete) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    if (userToDelete.username === 'admin' || userToDelete.id === 'user_admin') {
+    if (userToDelete.username === 'admin' || userToDelete.id === 'user_admin' || userToDelete.role === 'admin') {
       return res.status(400).json({ success: false, error: 'Primary Administrator account cannot be deleted' });
     }
 
-    users = users.filter((u) => u.id !== id);
-    writeUsers(users);
+    await removeUser(id);
+    res.json({ success: true, message: 'User account removed permanently from database.' });
+  });
 
-    res.json({ success: true, message: 'User account removed successfully' });
+  // ==========================================
+  // SYSTEM & BRANDING SETTINGS APIs
+  // ==========================================
+
+  app.get('/api/settings', (req, res) => {
+    res.json({
+      success: true,
+      settings: {
+        customLogo: cachedSettings.customLogo || null,
+      },
+    });
+  });
+
+  app.post('/api/settings/logo', async (req, res) => {
+    const { logo } = req.body;
+    await persistAdminSettings({ customLogo: logo || null });
+    res.json({ success: true, message: 'Branding logo updated permanently.' });
   });
 
   // ==========================================
@@ -239,16 +513,15 @@ async function startServer() {
   // Get all posts with filtering and approval status
   app.get('/api/posts', (req, res) => {
     const { type, category, search, status, city, approvalStatus, includePending } = req.query;
-    let posts = readPosts();
+    let posts = [...cachedPosts];
 
-    // Default: Public feeds only show approved posts (or backward compatible posts)
+    // Default: Public feeds only show approved posts
     if (includePending !== 'true') {
       if (approvalStatus) {
         if (approvalStatus !== 'all') {
           posts = posts.filter((p) => (p.approvalStatus || 'approved') === approvalStatus);
         }
       } else {
-        // Only show approved
         posts = posts.filter((p) => (p.approvalStatus || 'approved') === 'approved');
       }
     } else if (approvalStatus && approvalStatus !== 'all') {
@@ -292,9 +565,9 @@ async function startServer() {
     res.json({ success: true, count: posts.length, posts });
   });
 
-  // Get stats
+  // Get Stats
   app.get('/api/stats', (req, res) => {
-    const posts = readPosts();
+    const posts = cachedPosts;
     const approvedPosts = posts.filter((p) => (p.approvalStatus || 'approved') === 'approved');
     const totalPosts = approvedPosts.length;
     const totalNews = approvedPosts.filter((p) => p.type === 'news').length;
@@ -318,30 +591,28 @@ async function startServer() {
   });
 
   // Get single post by ID
-  app.get('/api/posts/:id', (req, res) => {
+  app.get('/api/posts/:id', async (req, res) => {
     const { id } = req.params;
-    const posts = readPosts();
-    const postIndex = posts.findIndex((p) => p.id === id || String(p.id) === id);
+    const postIndex = cachedPosts.findIndex((p) => p.id === id || String(p.id) === id);
 
     if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    // Increment view count
-    posts[postIndex].views = (posts[postIndex].views || 0) + 1;
-    writePosts(posts);
+    // Increment view count and persist
+    cachedPosts[postIndex].views = (cachedPosts[postIndex].views || 0) + 1;
+    await persistPost(cachedPosts[postIndex]);
 
-    res.json({ success: true, post: posts[postIndex] });
+    res.json({ success: true, post: cachedPosts[postIndex] });
   });
 
-  // Create post (Defaults to Pending Approval)
-  app.post('/api/posts', (req, res) => {
+  // Create post (Permanently saved to Firestore, defaults to Pending Approval unless admin auto-approved)
+  app.post('/api/posts', async (req, res) => {
     const body = req.body;
     if (!body.title || !body.content) {
       return res.status(400).json({ success: false, error: 'Title and content are required' });
     }
 
-    const posts = readPosts();
     const id = Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
     const now = new Date().toISOString();
 
@@ -350,8 +621,16 @@ async function startServer() {
       ? `ST-GR-${new Date().getFullYear().toString().slice(-2)}${Math.floor(1000 + Math.random() * 9000)}`
       : undefined;
 
-    // Requirement: When any user posts an Article or Grievance, it goes to "Pending Approval"
     const approvalStatus = body.autoApprove ? 'approved' : 'pending';
+
+    // Find author avatar from body or from user account if authorId provided
+    let authorAvatar = body.authorAvatar || undefined;
+    if (!authorAvatar && body.authorId) {
+      const matchedUser = cachedUsers.find((u) => u.id === body.authorId);
+      if (matchedUser?.avatar) {
+        authorAvatar = matchedUser.avatar;
+      }
+    }
 
     const newPost = {
       id,
@@ -364,6 +643,7 @@ async function startServer() {
       category: body.category || (isGrievance ? 'civic' : 'general'),
       location: body.location || { city: 'Local Area' },
       authorName: body.authorName?.trim() || (isGrievance ? 'Concerned Citizen' : 'Staff Reporter'),
+      authorAvatar: authorAvatar?.trim() || undefined,
       authorPhone: body.authorPhone?.trim() || undefined,
       authorRole: body.authorRole?.trim() || (isGrievance ? 'Citizen' : 'Reporter'),
       authorId: body.authorId || undefined,
@@ -393,21 +673,20 @@ async function startServer() {
       comments: [],
     };
 
-    posts.unshift(newPost);
-    writePosts(posts);
+    await persistPost(newPost);
 
     res.status(201).json({
       success: true,
       post: newPost,
       message:
         approvalStatus === 'pending'
-          ? 'Post submitted successfully. It is now awaiting Editorial Approval by Admin before appearing publicly.'
-          : 'Post published directly.',
+          ? 'Post submitted and permanently saved. Awaiting Editorial Approval by Admin before appearing in public feed.'
+          : 'Post published and permanently saved to cloud database.',
     });
   });
 
   // Admin Approval / Rejection Endpoint
-  app.post('/api/posts/:id/approval', (req, res) => {
+  app.post('/api/posts/:id/approval', async (req, res) => {
     const { id } = req.params;
     const { approvalStatus, reason, adminName } = req.body;
 
@@ -415,64 +694,60 @@ async function startServer() {
       return res.status(400).json({ success: false, error: 'Invalid approval status' });
     }
 
-    const posts = readPosts();
-    const postIndex = posts.findIndex((p) => p.id === id);
-
+    const postIndex = cachedPosts.findIndex((p) => p.id === id);
     if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
     const now = new Date().toISOString();
-    posts[postIndex].approvalStatus = approvalStatus;
-    posts[postIndex].updatedAt = now;
+    cachedPosts[postIndex].approvalStatus = approvalStatus;
+    cachedPosts[postIndex].updatedAt = now;
 
     if (approvalStatus === 'approved') {
-      posts[postIndex].approvedBy = adminName || 'Admin / Editorial Desk';
-      posts[postIndex].approvedAt = now;
-      posts[postIndex].rejectionReason = undefined;
+      cachedPosts[postIndex].approvedBy = adminName || 'Chief Editor & Admin';
+      cachedPosts[postIndex].approvedAt = now;
+      cachedPosts[postIndex].rejectionReason = undefined;
     } else if (approvalStatus === 'rejected') {
-      posts[postIndex].rejectionReason = reason || 'Content does not meet publication standards or community guidelines.';
-      posts[postIndex].approvedBy = undefined;
-      posts[postIndex].approvedAt = undefined;
+      cachedPosts[postIndex].rejectionReason =
+        reason || 'Content does not meet publication standards or community guidelines.';
+      cachedPosts[postIndex].approvedBy = undefined;
+      cachedPosts[postIndex].approvedAt = undefined;
     }
 
-    writePosts(posts);
+    await persistPost(cachedPosts[postIndex]);
 
     res.json({
       success: true,
-      post: posts[postIndex],
-      message: `Post ${approvalStatus === 'approved' ? 'approved & published live' : 'rejected'} successfully`,
+      post: cachedPosts[postIndex],
+      message: `Post ${approvalStatus === 'approved' ? 'approved & published live' : 'rejected'} permanently in database.`,
     });
   });
 
-  // Upvote / endorse
-  app.post('/api/posts/:id/upvote', (req, res) => {
+  // Upvote / Endorse
+  app.post('/api/posts/:id/upvote', async (req, res) => {
     const { id } = req.params;
-    const posts = readPosts();
-    const postIndex = posts.findIndex((p) => p.id === id);
+    const postIndex = cachedPosts.findIndex((p) => p.id === id);
 
     if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    posts[postIndex].upvotes = (posts[postIndex].upvotes || 0) + 1;
-    writePosts(posts);
+    cachedPosts[postIndex].upvotes = (cachedPosts[postIndex].upvotes || 0) + 1;
+    await persistPost(cachedPosts[postIndex]);
 
-    res.json({ success: true, upvotes: posts[postIndex].upvotes });
+    res.json({ success: true, upvotes: cachedPosts[postIndex].upvotes });
   });
 
   // Add Comment
-  app.post('/api/posts/:id/comment', (req, res) => {
+  app.post('/api/posts/:id/comment', async (req, res) => {
     const { id } = req.params;
-    const { author, text, isOfficial } = req.body;
+    const { author, text, isOfficial, authorAvatar } = req.body;
 
     if (!text || !text.trim()) {
       return res.status(400).json({ success: false, error: 'Comment text is required' });
     }
 
-    const posts = readPosts();
-    const postIndex = posts.findIndex((p) => p.id === id);
-
+    const postIndex = cachedPosts.findIndex((p) => p.id === id);
     if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
@@ -480,97 +755,93 @@ async function startServer() {
     const comment = {
       id: Date.now().toString(36),
       author: author?.trim() || 'Citizen',
+      authorAvatar: authorAvatar?.trim() || undefined,
       text: text.trim(),
       createdAt: new Date().toISOString(),
       isOfficial: Boolean(isOfficial),
     };
 
-    if (!posts[postIndex].comments) {
-      posts[postIndex].comments = [];
+    if (!cachedPosts[postIndex].comments) {
+      cachedPosts[postIndex].comments = [];
     }
-    posts[postIndex].comments.push(comment);
-    writePosts(posts);
+    cachedPosts[postIndex].comments.push(comment);
+    await persistPost(cachedPosts[postIndex]);
 
-    res.json({ success: true, comments: posts[postIndex].comments });
+    res.json({ success: true, comments: cachedPosts[postIndex].comments });
   });
 
-  // Update Grievance Status (Admin / Official Action)
-  app.post('/api/posts/:id/status', (req, res) => {
+  // Update Grievance Status (Admin / Authority Action)
+  app.post('/api/posts/:id/status', async (req, res) => {
     const { id } = req.params;
     const { status, note, officerName, department } = req.body;
 
-    const posts = readPosts();
-    const postIndex = posts.findIndex((p) => p.id === id);
-
+    const postIndex = cachedPosts.findIndex((p) => p.id === id);
     if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
     const now = new Date().toISOString();
-    posts[postIndex].status = status;
-    posts[postIndex].updatedAt = now;
+    cachedPosts[postIndex].status = status;
+    cachedPosts[postIndex].updatedAt = now;
 
-    if (!posts[postIndex].statusHistory) {
-      posts[postIndex].statusHistory = [];
+    if (!cachedPosts[postIndex].statusHistory) {
+      cachedPosts[postIndex].statusHistory = [];
     }
 
-    posts[postIndex].statusHistory.push({
+    cachedPosts[postIndex].statusHistory.push({
       status,
       note: note || `Status updated to ${status}`,
       timestamp: now,
-      updatedBy: officerName || 'Admin / Authority',
+      updatedBy: officerName || 'Admin / Municipal Authority',
     });
 
     if (department || note) {
-      posts[postIndex].officialResponse = {
+      cachedPosts[postIndex].officialResponse = {
         department: department || 'Municipal / Civic Administration',
-        message: note || 'Issue is being handled.',
+        message: note || 'Issue is currently being resolved.',
         timestamp: now,
-        officerName: officerName || 'Designated Officer',
+        officerName: officerName || 'Designated Authority',
       };
     }
 
-    writePosts(posts);
+    await persistPost(cachedPosts[postIndex]);
 
-    res.json({ success: true, post: posts[postIndex] });
+    res.json({ success: true, post: cachedPosts[postIndex] });
   });
 
-  // Update Post (Edit / Pin)
-  app.put('/api/posts/:id', (req, res) => {
+  // Update Post (Edit / Pin / Priority)
+  app.put('/api/posts/:id', async (req, res) => {
     const { id } = req.params;
-    const posts = readPosts();
-    const postIndex = posts.findIndex((p) => p.id === id);
+    const postIndex = cachedPosts.findIndex((p) => p.id === id);
 
     if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    const current = posts[postIndex];
-    posts[postIndex] = {
+    const current = cachedPosts[postIndex];
+    cachedPosts[postIndex] = {
       ...current,
       ...req.body,
-      id: current.id, // prevent ID overwrite
+      id: current.id,
       updatedAt: new Date().toISOString(),
     };
 
-    writePosts(posts);
+    await persistPost(cachedPosts[postIndex]);
 
-    res.json({ success: true, post: posts[postIndex] });
+    res.json({ success: true, post: cachedPosts[postIndex] });
   });
 
-  // Delete Post
-  app.delete('/api/posts/:id', (req, res) => {
+  // Delete Post (Permanent from Firestore)
+  app.delete('/api/posts/:id', async (req, res) => {
     const { id } = req.params;
-    let posts = readPosts();
-    const initialLen = posts.length;
-    posts = posts.filter((p) => p.id !== id);
+    const postIndex = cachedPosts.findIndex((p) => p.id === id);
 
-    if (posts.length === initialLen) {
+    if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    writePosts(posts);
-    res.json({ success: true, message: 'Post deleted successfully' });
+    await removePost(id);
+    res.json({ success: true, message: 'Post deleted permanently from cloud database.' });
   });
 
   // Vite middleware for development vs static in production
@@ -589,7 +860,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Story Today server running on port ${PORT}`);
+    console.log(`Story Today server running on http://0.0.0.0:${PORT} with Firestore Cloud Database`);
   });
 }
 

@@ -123,6 +123,7 @@ export const CreatePostModal: React.FC<Props> = ({
         authorName: authorName.trim() || (type === 'grievance' ? 'Concerned Citizen' : 'Staff Reporter'),
         authorRole: authorRole.trim() || undefined,
         authorId: currentUser?.id,
+        authorAvatar: currentUser?.avatar || undefined,
         priority: type === 'grievance' ? priority : undefined,
         isBreaking: type === 'news' ? isBreaking : false,
         imageUrl: imageUrl.trim() || undefined,
@@ -213,9 +214,15 @@ export const CreatePostModal: React.FC<Props> = ({
             </span>
           </div>
           {currentUser ? (
-            <span className="text-[11px] font-bold text-[#004D40] bg-[#E0F2F1] px-2 py-0.5 rounded-md flex items-center gap-1">
-              <User className="w-3 h-3" />
-              {currentUser.name} ({currentUser.role})
+            <span className="text-[11px] font-bold text-[#004D40] bg-[#E0F2F1] px-2 py-0.5 rounded-md flex items-center gap-1.5">
+              <div className="w-4 h-4 rounded-full overflow-hidden bg-[#004D40] text-white flex items-center justify-center text-[8px] font-bold shrink-0">
+                {currentUser.avatar ? (
+                  <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <span>{currentUser.name.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
+              <span>{currentUser.name} ({currentUser.role})</span>
             </span>
           ) : onOpenLoginModal ? (
             <button

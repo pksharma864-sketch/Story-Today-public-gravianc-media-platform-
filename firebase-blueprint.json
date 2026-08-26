@@ -1,0 +1,85 @@
+{
+  "entities": {
+    "Post": {
+      "title": "Post",
+      "description": "A news article, civic report, or citizen grievance",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["news", "grievance"] },
+        "title": { "type": "string" },
+        "titleHi": { "type": "string" },
+        "content": { "type": "string" },
+        "contentHi": { "type": "string" },
+        "category": { "type": "string" },
+        "location": { "type": "object" },
+        "authorName": { "type": "string" },
+        "authorAvatar": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "authorId": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "views": { "type": "number" },
+        "upvotes": { "type": "number" },
+        "isPinned": { "type": "boolean" },
+        "isBreaking": { "type": "boolean" },
+        "approvalStatus": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "approvedBy": { "type": "string" },
+        "approvedAt": { "type": "string" },
+        "status": { "type": "string" },
+        "priority": { "type": "string" },
+        "referenceNumber": { "type": "string" },
+        "statusHistory": { "type": "array" },
+        "officialResponse": { "type": "object" },
+        "comments": { "type": "array" }
+      },
+      "required": ["id", "type", "title", "content", "category", "authorName", "createdAt", "approvalStatus"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A registered citizen, staff reporter, or administrator account",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "reporter", "citizen", "moderator"] },
+        "avatar": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "bio": { "type": "string" },
+        "organization": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "suspended", "pending"] }
+      },
+      "required": ["id", "name", "username", "password", "role", "createdAt", "status"]
+    },
+    "SystemSetting": {
+      "title": "SystemSetting",
+      "description": "Global application configuration and security settings",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "value": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["key", "value", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Collection of all news articles and citizen grievance posts"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Collection of user accounts including admins, reporters, and citizens"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/SystemSetting" },
+      "description": "Global system settings, logo configurations, and admin password hashes"
+    }
+  }
+}

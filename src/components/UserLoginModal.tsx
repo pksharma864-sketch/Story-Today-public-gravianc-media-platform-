@@ -16,6 +16,9 @@ import {
   Newspaper,
   UserCheck,
   Mail,
+  Camera,
+  Upload,
+  Trash2,
 } from 'lucide-react';
 
 interface Props {
@@ -44,6 +47,7 @@ export const UserLoginModal: React.FC<Props> = ({
   const [regUsername, setRegUsername] = useState('');
   const [regRole, setRegRole] = useState<UserRole>('citizen');
   const [regEmail, setRegEmail] = useState('');
+  const [regAvatar, setRegAvatar] = useState<string | null>(null);
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPass, setRegConfirmPass] = useState('');
   const [showRegPass, setShowRegPass] = useState(false);
@@ -59,6 +63,20 @@ export const UserLoginModal: React.FC<Props> = ({
     setErrorMsg('');
     setSuccessMsg('');
   }, [initialMode]);
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg(lang === 'hi' ? 'फ़ोटो 5MB से कम होनी चाहिए।' : 'Photo must be under 5MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setRegAvatar(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Password strength calculation
   const getPasswordStrength = (pass: string) => {
@@ -141,6 +159,7 @@ export const UserLoginModal: React.FC<Props> = ({
         password: regPassword.trim(),
         role: regRole,
         email: regEmail.trim() || undefined,
+        avatar: regAvatar || undefined,
       });
 
       if (res.success && res.user) {
@@ -419,6 +438,45 @@ export const UserLoginModal: React.FC<Props> = ({
                       ? 'स्थानीय समाचार, ग्राउंड रिपोर्टिंग और ब्रेकिंग अपडेट्स प्रकाशित करें।'
                       : 'Publish verified local news, cover ward events & ground investigations.'}
                   </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Profile Photo Upload (Optional) */}
+            <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+              <label className="block text-xs font-bold text-[#1A1A1A] mb-2 flex items-center justify-between">
+                <span>{lang === 'hi' ? 'प्रोफ़ाइल फ़ोटो (ऐच्छिक)' : 'Profile Photo (Optional)'}</span>
+                <span className="text-[10px] text-gray-400 font-normal">Gallery / Camera</span>
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 text-[#004D40] flex items-center justify-center font-bold text-sm border-2 border-white shadow-xs shrink-0">
+                  {regAvatar ? (
+                    <img src={regAvatar} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <User className="w-6 h-6 text-gray-400" />
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-1">
+                  <label className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 cursor-pointer shadow-2xs transition-colors">
+                    <Camera className="w-3.5 h-3.5 text-[#004D40]" />
+                    <span>{lang === 'hi' ? 'फ़ोटो चुनें' : 'Upload Photo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  {regAvatar && (
+                    <button
+                      type="button"
+                      onClick={() => setRegAvatar(null)}
+                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Remove Photo"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

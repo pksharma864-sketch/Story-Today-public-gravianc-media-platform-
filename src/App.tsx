@@ -261,8 +261,8 @@ export default function App() {
   };
 
   // Add Comment
-  const handleAddComment = async (id: string, author: string, text: string) => {
-    const updatedComments = await addPostComment(id, author, text);
+  const handleAddComment = async (id: string, author: string, text: string, authorAvatar?: string) => {
+    const updatedComments = await addPostComment(id, author, text, authorAvatar);
     if (updatedComments) {
       setPosts((prev) =>
         prev.map((p) => (p.id === id ? { ...p, comments: updatedComments } : p))
@@ -353,9 +353,6 @@ export default function App() {
 
   // Admin Auth Handler
   const handleAdminAuth = async (passcode: string): Promise<boolean> => {
-    const customPass = localStorage.getItem('story_today_custom_admin_pass');
-    
-    // First try authenticating with server
     try {
       const res = await loginUser('admin', passcode);
       if (res.success && res.user) {
@@ -365,18 +362,8 @@ export default function App() {
         localStorage.setItem('story_today_admin_active', 'true');
         return true;
       }
-    } catch {
-      // Fallback
-    }
-
-    if (
-      passcode === 'admin123' ||
-      passcode.toLowerCase() === 'admin' ||
-      (customPass && passcode === customPass)
-    ) {
-      setIsAdmin(true);
-      localStorage.setItem('story_today_admin_active', 'true');
-      return true;
+    } catch (err) {
+      console.error('Admin authentication error:', err);
     }
     return false;
   };
@@ -568,6 +555,7 @@ export default function App() {
               post={activePost}
               lang={lang}
               isAdmin={isAdmin}
+              currentUser={currentUser}
               onBack={handleBackToFeed}
               onShare={(post) => setSharePost(post)}
               onUpvote={handleUpvote}

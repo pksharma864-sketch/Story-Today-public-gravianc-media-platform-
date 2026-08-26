@@ -105,13 +105,14 @@ export async function addPostComment(
   id: string,
   author: string,
   text: string,
+  authorAvatar?: string,
   isOfficial?: boolean
 ): Promise<any[] | null> {
   try {
     const res = await fetch(`${API_BASE}/posts/${id}/comment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ author, text, isOfficial }),
+      body: JSON.stringify({ author, text, authorAvatar, isOfficial }),
     });
     if (!res.ok) throw new Error('Failed to add comment');
     const data = await res.json();
@@ -242,6 +243,9 @@ export async function createUser(userData: {
   password: string;
   role: string;
   email?: string;
+  avatar?: string;
+  phone?: string;
+  bio?: string;
 }): Promise<{ success: boolean; user?: UserAccount; error?: string }> {
   try {
     const res = await fetch(`${API_BASE}/users`, {
@@ -257,6 +261,42 @@ export async function createUser(userData: {
   }
 }
 
+export async function updateUserAvatar(
+  userId: string,
+  avatar: string | null
+): Promise<{ success: boolean; user?: UserAccount; error?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/users/${userId}/avatar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ avatar }),
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('API updateUserAvatar error:', err);
+    return { success: false, error: 'Network error while updating avatar' };
+  }
+}
+
+export async function updateUserProfile(
+  userId: string,
+  data: Partial<UserAccount>
+): Promise<{ success: boolean; user?: UserAccount; error?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/users/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    return result;
+  } catch (err) {
+    console.error('API updateUserProfile error:', err);
+    return { success: false, error: 'Network error while updating profile' };
+  }
+}
+
 export async function deleteUser(id: string): Promise<{ success: boolean; error?: string }> {
   try {
     const res = await fetch(`${API_BASE}/users/${id}`, {
@@ -269,3 +309,30 @@ export async function deleteUser(id: string): Promise<{ success: boolean; error?
     return { success: false, error: 'Network error while deleting user' };
   }
 }
+
+export async function fetchSettings(): Promise<{ customLogo?: string | null }> {
+  try {
+    const res = await fetch(`${API_BASE}/settings`);
+    if (!res.ok) throw new Error('Failed to fetch settings');
+    const data = await res.json();
+    return data.settings || {};
+  } catch (err) {
+    console.error('API fetchSettings error:', err);
+    return {};
+  }
+}
+
+export async function updateBrandingLogo(logo: string | null): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/settings/logo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ logo }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error('API updateBrandingLogo error:', err);
+    return false;
+  }
+}
+

@@ -24,6 +24,8 @@ import {
   Shield,
   Sparkles,
   Award,
+  Camera,
+  Edit3,
 } from 'lucide-react';
 
 interface Props {
@@ -33,6 +35,7 @@ interface Props {
   onAdminToggle: () => void;
   currentUser: UserAccount | null;
   onOpenLoginModal: (mode?: 'login' | 'register') => void;
+  onOpenProfileModal?: () => void;
   onUserLogout: () => void;
   pendingApprovalsCount?: number;
   searchQuery: string;
@@ -52,6 +55,7 @@ export const Header: React.FC<Props> = ({
   onAdminToggle,
   currentUser,
   onOpenLoginModal,
+  onOpenProfileModal,
   onUserLogout,
   pendingApprovalsCount = 0,
   searchQuery,
@@ -187,8 +191,17 @@ export const Header: React.FC<Props> = ({
                 className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200/80 px-2 py-1 sm:py-1.5 rounded-lg border border-[#E0E0E0] text-xs transition-colors cursor-pointer"
                 title="View User Profile"
               >
-                <div className="w-5 h-5 rounded-full bg-[#004D40] text-white flex items-center justify-center text-[10px] font-bold">
-                  {currentUser.name.charAt(0).toUpperCase()}
+                <div className="w-5 h-5 rounded-full overflow-hidden bg-[#004D40] text-white flex items-center justify-center text-[10px] font-bold shrink-0 border border-gray-300">
+                  {currentUser.avatar ? (
+                    <img
+                      src={currentUser.avatar}
+                      alt={currentUser.name}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <span>{currentUser.name.charAt(0).toUpperCase()}</span>
+                  )}
                 </div>
                 <span className="font-bold text-gray-800 hidden sm:inline max-w-[110px] truncate">
                   {currentUser.name}
@@ -207,12 +220,24 @@ export const Header: React.FC<Props> = ({
               {showProfileMenu && (
                 <div
                   id="profile-dropdown-card"
-                  className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-200 py-3 px-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 text-left"
+                  className="absolute right-0 mt-2 w-68 bg-white rounded-2xl shadow-xl border border-gray-200 py-3 px-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 text-left"
                 >
                   <div className="flex items-start gap-2.5 pb-3 border-b border-gray-100">
-                    <div className="w-10 h-10 rounded-xl bg-[#004D40] text-[#E0F2F1] flex items-center justify-center font-bold text-base shadow-xs shrink-0">
-                      {currentUser.name.charAt(0).toUpperCase()}
+                    <div className="relative group shrink-0">
+                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#004D40] text-[#E0F2F1] flex items-center justify-center font-bold text-base shadow-xs border-2 border-[#004D40]/30">
+                        {currentUser.avatar ? (
+                          <img
+                            src={currentUser.avatar}
+                            alt={currentUser.name}
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <span>{currentUser.name.charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
                     </div>
+
                     <div className="min-w-0 flex-1">
                       <h4 className="text-xs font-bold text-gray-900 truncate">
                         {currentUser.name}
@@ -232,8 +257,26 @@ export const Header: React.FC<Props> = ({
                     </div>
                   </div>
 
+                  {/* Profile Photo & Edit Action */}
+                  <div className="py-2 border-b border-gray-100">
+                    <button
+                      id="btn-header-edit-profile"
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        if (onOpenProfileModal) onOpenProfileModal();
+                      }}
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-[#004D40] hover:bg-[#E0F2F1]/60 rounded-lg font-bold transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Camera className="w-3.5 h-3.5 text-[#004D40]" />
+                        <span>{lang === 'hi' ? 'प्रोफ़ाइल फ़ोटो व विवरण' : 'Edit Profile & Photo'}</span>
+                      </div>
+                      <Edit3 className="w-3 h-3 text-[#004D40]" />
+                    </button>
+                  </div>
+
                   {/* Account Capabilities Info */}
-                  <div className="py-2.5 text-[11px] text-gray-600 space-y-1">
+                  <div className="py-2 text-[11px] text-gray-600 space-y-1">
                     {currentUser.role === 'reporter' ? (
                       <p className="flex items-center gap-1.5 text-emerald-800">
                         <Newspaper className="w-3.5 h-3.5 text-emerald-600 shrink-0" />

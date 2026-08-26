@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if request is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Public read access for published news and grievance posts
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if true;
+    }
+
+    // User accounts collection (accessible via backend and client with role checks)
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // System settings (admin credentials, logo settings, configurations)
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+
+    // Test connection doc
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

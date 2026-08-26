@@ -188,10 +188,22 @@ export const PostCard: React.FC<Props> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
-            <span>{post.authorName}</span>
-            <span>•</span>
-            <span>{formattedDate}</span>
+          <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
+            <div className="w-4 h-4 rounded-full overflow-hidden bg-[#004D40] text-white flex items-center justify-center text-[8px] font-bold shrink-0 border border-gray-200">
+              {post.authorAvatar ? (
+                <img
+                  src={post.authorAvatar}
+                  alt={post.authorName}
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span>{post.authorName.charAt(0).toUpperCase()}</span>
+              )}
+            </div>
+            <span className="font-medium text-gray-700">{post.authorName}</span>
+            <span className="text-gray-300">•</span>
+            <span className="text-gray-400 text-[10px]">{formattedDate}</span>
           </div>
         </div>
 

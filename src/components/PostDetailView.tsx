@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PostItem, Language, GrievanceStatus, ApprovalStatus } from '../types';
+import { PostItem, Language, GrievanceStatus, ApprovalStatus, UserAccount } from '../types';
 import { translations, categoriesMap, getStatusText } from '../i18n/translations';
 import { GrievanceProgressBar } from './GrievanceProgressBar';
 import {
@@ -33,10 +33,11 @@ interface Props {
   post: PostItem;
   lang: Language;
   isAdmin: boolean;
+  currentUser?: UserAccount | null;
   onBack: () => void;
   onShare: (post: PostItem) => void;
   onUpvote: (id: string) => void;
-  onAddComment: (id: string, author: string, text: string) => void;
+  onAddComment: (id: string, author: string, text: string, authorAvatar?: string) => void;
   onUpdateStatus: (id: string, status: GrievanceStatus, note: string, officerName?: string, department?: string) => void;
   onDeletePost: (id: string) => void;
   onTogglePin: (id: string, currentPin: boolean) => void;
@@ -48,6 +49,7 @@ export const PostDetailView: React.FC<Props> = ({
   post,
   lang,
   isAdmin,
+  currentUser,
   onBack,
   onShare,
   onUpvote,
@@ -61,12 +63,18 @@ export const PostDetailView: React.FC<Props> = ({
   const t = translations[lang];
 
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [commentName, setCommentName] = useState('');
+  const [commentName, setCommentName] = useState(currentUser?.name || '');
   const [commentText, setCommentText] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [showRejectBox, setShowRejectBox] = useState(false);
   const [rejectionNote, setRejectionNote] = useState('');
+
+  useEffect(() => {
+    if (currentUser?.name && !commentName) {
+      setCommentName(currentUser.name);
+    }
+  }, [currentUser]);
 
   // Admin status update state
   const [selectedStatus, setSelectedStatus] = useState<GrievanceStatus>(
@@ -147,7 +155,12 @@ export const PostDetailView: React.FC<Props> = ({
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
-    onAddComment(post.id, commentName.trim() || 'Citizen', commentText.trim());
+    onAddComment(
+      post.id,
+      commentName.trim() || 'Citizen',
+      commentText.trim(),
+      currentUser?.avatar || undefined
+    );
     setCommentText('');
   };
 
@@ -366,8 +379,17 @@ export const PostDetailView: React.FC<Props> = ({
         {/* Author, Location, Date Meta Row */}
         <div className="flex items-center justify-between flex-wrap gap-4 mb-8 pb-6 border-b border-gray-100">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-[#004D40] text-white flex items-center justify-center font-bold text-xs">
-              {post.authorName.slice(0, 2).toUpperCase() || 'CT'}
+            <div className="w-11 h-11 rounded-full overflow-hidden bg-[#004D40] text-white flex items-center justify-center font-bold text-xs shadow-xs border border-gray-300 shrink-0">
+              {post.authorAvatar ? (
+                <img
+                  src={post.authorAvatar}
+                  alt={post.authorName}
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span>{post.authorName.slice(0, 2).toUpperCase() || 'CT'}</span>
+              )}
             </div>
             <div className="text-xs">
               <p className="font-bold uppercase tracking-wider text-[#1A1A1A]">{post.authorName}</p>
@@ -657,8 +679,22 @@ export const PostDetailView: React.FC<Props> = ({
             {post.comments && post.comments.length > 0 ? (
               post.comments.map((c) => (
                 <div key={c.id} className="p-3.5 bg-white rounded-lg border border-[#E0E0E0] text-xs">
-                  <div className="flex items-center justify-between text-gray-500 mb-1">
-                    <span className="font-bold text-[#1A1A1A]">{c.author}</span>
+                  <div className="flex items-center justify-between text-gray-500 mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full overflow-hidden bg-[#004D40] text-white flex items-center justify-center text-[9px] font-bold shrink-0 border border-gray-200">
+                        {c.authorAvatar ? (
+                          <img
+                            src={c.authorAvatar}
+                            alt={c.author}
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <span>{c.author.charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <span className="font-bold text-[#1A1A1A]">{c.author}</span>
+                    </div>
                     <span className="text-[10px] text-gray-400">
                       {new Date(c.createdAt).toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-US', {
                         month: 'short',
@@ -668,7 +704,7 @@ export const PostDetailView: React.FC<Props> = ({
                       })}
                     </span>
                   </div>
-                  <p className="text-gray-700 leading-relaxed">{c.text}</p>
+                  <p className="text-gray-700 leading-relaxed pl-7">{c.text}</p>
                 </div>
               ))
             ) : (
