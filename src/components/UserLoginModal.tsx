@@ -357,6 +357,25 @@ export const UserLoginModal: React.FC<Props> = ({
               </span>
             </button>
 
+            {/* Quick Admin Helper */}
+            <div className="p-2.5 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between text-[11px] text-gray-600">
+              <div>
+                <span>Admin Login: </span>
+                <strong className="font-mono text-gray-800">admin</strong> / <strong className="font-mono text-gray-800">admin123</strong>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginUsername('admin');
+                  setLoginPassword('admin123');
+                  setErrorMsg('');
+                }}
+                className="text-[#004D40] hover:underline font-bold text-xs cursor-pointer"
+              >
+                ⚡ Fill Admin
+              </button>
+            </div>
+
             {/* Switch to Register link */}
             <div className="text-center pt-2">
               <button

@@ -1,0 +1,18 @@
+{
+  "short_name": "StoryToday",
+  "name": "Story Today - Citizen Grievance & News Network",
+  "description": "Hyperlocal citizen news publishing and ward-level grievance resolution platform.",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#004D40",
+  "theme_color": "#004D40",
+  "display": "standalone",
+  "orientation": "portrait"
+}

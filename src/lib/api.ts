@@ -28,8 +28,7 @@ export async function fetchPosts(filters?: {
     return data.posts || [];
   } catch (err) {
     console.error('API fetchPosts error:', err);
-    const local = localStorage.getItem('story_today_posts_backup');
-    return local ? JSON.parse(local) : [];
+    return [];
   }
 }
 
@@ -207,6 +206,35 @@ export async function loginUser(username: string, password: string): Promise<{ s
   } catch (err) {
     console.error('API loginUser error:', err);
     return { success: false, error: 'Network or server error during login' };
+  }
+}
+
+export async function verifyAdminPasscode(passcode: string): Promise<{ success: boolean; user?: UserAccount; error?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/auth/verify-admin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passcode }),
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('API verifyAdminPasscode error:', err);
+    return { success: false, error: 'Network error verifying admin passcode' };
+  }
+}
+
+export async function resetAdminAccount(): Promise<{ success: boolean; message?: string; username?: string; password?: string; error?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/auth/reset-admin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('API resetAdminAccount error:', err);
+    return { success: false, error: 'Network error resetting admin account' };
   }
 }
 
