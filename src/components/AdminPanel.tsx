@@ -425,26 +425,6 @@ export const AdminPanel: React.FC<Props> = ({
                 <p className="text-gray-700">
                   Access the editorial desk, approve or reject civic reports, manage journalist accounts, and customize app configurations.
                 </p>
-
-                {/* Permanent Credentials Hint */}
-                <div className="pt-2 border-t border-[#004D40]/20 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                  <div>
-                    <span className="text-gray-600">Admin Account: </span>
-                    <strong className="font-mono text-gray-900 bg-white/80 px-1.5 py-0.5 rounded border border-gray-300">admin</strong>
-                    <span className="text-gray-600 ml-2">Passcode: </span>
-                    <strong className="font-mono text-gray-900 bg-white/80 px-1.5 py-0.5 rounded border border-gray-300">admin123</strong>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPasscode('admin123');
-                      setAuthError('');
-                    }}
-                    className="text-xs font-bold text-[#004D40] hover:underline cursor-pointer"
-                  >
-                    ⚡ Auto-Fill
-                  </button>
-                </div>
               </div>
 
               <div>
@@ -456,7 +436,7 @@ export const AdminPanel: React.FC<Props> = ({
                   <input
                     id="input-admin-passcode"
                     type={showLoginPass ? 'text' : 'password'}
-                    placeholder="Enter admin passcode (e.g. admin123)"
+                    placeholder="••••••••"
                     value={passcode}
                     onChange={(e) => {
                       setPasscode(e.target.value);
@@ -474,60 +454,28 @@ export const AdminPanel: React.FC<Props> = ({
                   </button>
                 </div>
                 {authError && (
-                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between text-xs text-red-700">
-                    <span>{authError}</span>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const res = await resetAdminAccount();
-                        if (res.success) {
-                          setPasscode('admin123');
-                          setAuthError('');
-                          alert('Admin account has been reset to admin / admin123!');
-                        }
-                      }}
-                      className="underline font-bold text-red-800 hover:text-red-950"
-                    >
-                      Reset to admin123
-                    </button>
-                  </div>
+                  <p className="text-xs text-red-600 font-semibold mt-1.5">
+                    {authError}
+                  </p>
                 )}
               </div>
 
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={async () => {
-                    const res = await resetAdminAccount();
-                    if (res.success) {
-                      setPasscode('admin123');
-                      setAuthError('');
-                      alert('Admin account has been permanently reset to: \nUsername: admin\nPassword: admin123');
-                    }
-                  }}
-                  className="text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1 font-medium"
+                  onClick={onClose}
+                  className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-100 rounded-lg"
                 >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Reset Credentials</span>
+                  {t.cancel}
                 </button>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-100 rounded-lg"
-                  >
-                    {t.cancel}
-                  </button>
-                  <button
-                    type="submit"
-                    id="btn-submit-admin-auth"
-                    className="px-5 py-2.5 bg-[#004D40] hover:bg-[#00382E] text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-xs flex items-center gap-2 cursor-pointer"
-                  >
-                    <Unlock className="w-4 h-4 text-[#E0F2F1]" />
-                    <span>Unlock Admin Desk</span>
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  id="btn-submit-admin-auth"
+                  className="px-5 py-2.5 bg-[#004D40] hover:bg-[#00382E] text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-xs flex items-center gap-2 cursor-pointer"
+                >
+                  <Unlock className="w-4 h-4 text-[#E0F2F1]" />
+                  <span>Unlock Admin Desk</span>
+                </button>
               </div>
             </form>
           ) : (
