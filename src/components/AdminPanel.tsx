@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { PostItem, Language, AppStats, UserAccount, ApprovalStatus, UserRole } from '../types';
+import { PostItem, Language, AppStats, UserAccount, ApprovalStatus, UserRole, ReporterIdCard } from '../types';
 import { translations, categoriesMap } from '../i18n/translations';
 import { StoryTodayLogo } from './StoryTodayLogo';
+import { ReporterIdCardModal } from './ReporterIdCardModal';
 import {
   fetchUsers,
   createUser,
@@ -11,6 +12,10 @@ import {
   updateBrandingLogo,
   fetchSettings,
   resetAdminAccount,
+  fetchIdCards,
+  approveIdCard,
+  rejectIdCard,
+  deleteIdCard,
 } from '../lib/api';
 import {
   ShieldCheck,
@@ -41,6 +46,9 @@ import {
   AlertCircle,
   Sparkles,
   Copy,
+  BadgeCheck,
+  Phone,
+  MapPin,
 } from 'lucide-react';
 
 interface Props {
@@ -77,13 +85,23 @@ export const AdminPanel: React.FC<Props> = ({
   const [authError, setAuthError] = useState('');
 
   // Active Admin Sub-tab
-  const [adminTab, setAdminTab] = useState<'approvals' | 'users' | 'security' | 'branding' | 'overview'>('approvals');
+  const [adminTab, setAdminTab] = useState<'approvals' | 'id_cards' | 'users' | 'security' | 'branding' | 'overview'>('approvals');
 
   // Approvals Filter Tab
   const [approvalFilter, setApprovalFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [selectedPostForReject, setSelectedPostForReject] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  // Reporter ID Card Management State
+  const [idCardsList, setIdCardsList] = useState<ReporterIdCard[]>([]);
+  const [isLoadingIdCards, setIsLoadingIdCards] = useState(false);
+  const [idCardFilter, setIdCardFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [selectedCardForReject, setSelectedCardForReject] = useState<string | null>(null);
+  const [cardRejectReason, setCardRejectReason] = useState('');
+  const [selectedCardForPreview, setSelectedCardForPreview] = useState<ReporterIdCard | null>(null);
+  const [idCardActionLoadingId, setIdCardActionLoadingId] = useState<string | null>(null);
+  const [idCardActionMsg, setIdCardActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // User Management State
   const [usersList, setUsersList] = useState<UserAccount[]>([]);
@@ -164,8 +182,91 @@ export const AdminPanel: React.FC<Props> = ({
 
     if (isAdmin) {
       loadUsers();
+      loadIdCards();
     }
   }, [isAdmin]);
+
+  const loadIdCards = async () => {
+    setIsLoadingIdCards(true);
+    try {
+      const cards = await fetchIdCards();
+      setIdCardsList(cards);
+    } catch (err) {
+      console.error('Failed to load ID cards', err);
+    } finally {
+      setIsLoadingIdCards(false);
+    }
+  };
+
+  const handleApproveIdCard = async (cardId: string) => {
+    setIdCardActionLoadingId(cardId);
+    setIdCardActionMsg(null);
+    try {
+      const res = await approveIdCard(cardId, 'Chief Admin');
+      if (res.success && res.idCard) {
+        setIdCardsList((prev) => prev.map((c) => (c.id === cardId ? res.idCard! : c)));
+        setIdCardActionMsg({
+          type: 'success',
+          text: `Press Identity Card approved successfully! Credential: ${res.idCard.cardNumber || cardId}`,
+        });
+        setTimeout(() => setIdCardActionMsg(null), 4000);
+      } else {
+        setIdCardActionMsg({ type: 'error', text: res.error || 'Failed to approve ID card' });
+      }
+    } catch (err) {
+      setIdCardActionMsg({ type: 'error', text: 'Network error while approving ID card' });
+    } finally {
+      setIdCardActionLoadingId(null);
+    }
+  };
+
+  const handleRejectIdCard = async (cardId: string) => {
+    if (!cardRejectReason.trim()) {
+      setIdCardActionMsg({ type: 'error', text: 'Please provide a reason for rejecting the ID card application.' });
+      return;
+    }
+    setIdCardActionLoadingId(cardId);
+    setIdCardActionMsg(null);
+    try {
+      const res = await rejectIdCard(cardId, cardRejectReason.trim());
+      if (res.success && res.idCard) {
+        setIdCardsList((prev) => prev.map((c) => (c.id === cardId ? res.idCard! : c)));
+        setSelectedCardForReject(null);
+        setCardRejectReason('');
+        setIdCardActionMsg({
+          type: 'success',
+          text: 'ID card application rejected and user notified.',
+        });
+        setTimeout(() => setIdCardActionMsg(null), 4000);
+      } else {
+        setIdCardActionMsg({ type: 'error', text: res.error || 'Failed to reject ID card' });
+      }
+    } catch (err) {
+      setIdCardActionMsg({ type: 'error', text: 'Network error while rejecting ID card' });
+    } finally {
+      setIdCardActionLoadingId(null);
+    }
+  };
+
+  const handleDeleteIdCard = async (cardId: string) => {
+    if (!window.confirm('Are you sure you want to revoke and delete this Press Identity Card?')) return;
+    setIdCardActionLoadingId(cardId);
+    setIdCardActionMsg(null);
+    try {
+      const res = await deleteIdCard(cardId);
+      if (res.success) {
+        setIdCardsList((prev) => prev.filter((c) => c.id !== cardId));
+        setIdCardActionMsg({ type: 'success', text: 'ID card deleted / revoked.' });
+        setTimeout(() => setIdCardActionMsg(null), 4000);
+      } else {
+        setIdCardActionMsg({ type: 'error', text: res.error || 'Failed to delete ID card' });
+      }
+    } catch (err) {
+      setIdCardActionMsg({ type: 'error', text: 'Network error while deleting ID card' });
+    } finally {
+      setIdCardActionLoadingId(null);
+    }
+  };
 
   const loadUsers = async () => {
     setIsLoadingUsers(true);
@@ -502,6 +603,27 @@ export const AdminPanel: React.FC<Props> = ({
                 </button>
 
                 <button
+                  id="tab-admin-id-cards"
+                  onClick={() => {
+                    setAdminTab('id_cards');
+                    loadIdCards();
+                  }}
+                  className={`px-3 py-2 text-xs font-bold rounded-lg uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-2 ${
+                    adminTab === 'id_cards'
+                      ? 'bg-[#004D40] text-white shadow-xs'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <BadgeCheck className="w-4 h-4" />
+                  <span>Reporter ID Cards</span>
+                  {idCardsList.filter((c) => c.status === 'pending').length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-amber-500 text-white font-bold">
+                      {idCardsList.filter((c) => c.status === 'pending').length}
+                    </span>
+                  )}
+                </button>
+
+                <button
                   id="tab-admin-users"
                   onClick={() => setAdminTab('users')}
                   className={`px-3 py-2 text-xs font-bold rounded-lg uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-2 ${
@@ -780,6 +902,276 @@ export const AdminPanel: React.FC<Props> = ({
                           )}
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ------------------------------------------- */}
+              {/* TAB: REPORTER IDENTITY CARD APPROVALS */}
+              {/* ------------------------------------------- */}
+              {adminTab === 'id_cards' && (
+                <div className="space-y-4">
+                  {idCardActionMsg && (
+                    <div
+                      className={`p-3 rounded-lg border text-xs flex items-center gap-2 ${
+                        idCardActionMsg.type === 'success'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-red-50 text-red-800 border-red-200'
+                      }`}
+                    >
+                      {idCardActionMsg.type === 'success' ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                      )}
+                      <span>{idCardActionMsg.text}</span>
+                    </div>
+                  )}
+
+                  {/* Filter Sub-Tabs */}
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-1.5 bg-[#FAFAFA] p-1 rounded-lg border border-[#E0E0E0]">
+                      <button
+                        onClick={() => setIdCardFilter('pending')}
+                        className={`px-3 py-1 text-xs font-bold rounded-md uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                          idCardFilter === 'pending'
+                            ? 'bg-[#004D40] text-white shadow-xs'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Pending Review ({idCardsList.filter((c) => c.status === 'pending').length})</span>
+                      </button>
+
+                      <button
+                        onClick={() => setIdCardFilter('approved')}
+                        className={`px-3 py-1 text-xs font-bold rounded-md uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                          idCardFilter === 'approved'
+                            ? 'bg-emerald-700 text-white shadow-xs'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Approved ({idCardsList.filter((c) => c.status === 'approved').length})</span>
+                      </button>
+
+                      <button
+                        onClick={() => setIdCardFilter('rejected')}
+                        className={`px-3 py-1 text-xs font-bold rounded-md uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                          idCardFilter === 'rejected'
+                            ? 'bg-red-700 text-white shadow-xs'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>Rejected ({idCardsList.filter((c) => c.status === 'rejected').length})</span>
+                      </button>
+
+                      <button
+                        onClick={() => setIdCardFilter('all')}
+                        className={`px-3 py-1 text-xs font-bold rounded-md uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                          idCardFilter === 'all'
+                            ? 'bg-gray-800 text-white shadow-xs'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        <span>All ({idCardsList.length})</span>
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={loadIdCards}
+                      className="px-2.5 py-1 text-xs font-semibold text-gray-600 hover:text-gray-900 flex items-center gap-1 rounded hover:bg-gray-100 cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isLoadingIdCards ? 'animate-spin' : ''}`} />
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+
+                  {/* ID Cards List */}
+                  {isLoadingIdCards ? (
+                    <div className="py-12 text-center text-xs text-gray-500 font-semibold flex flex-col items-center gap-2">
+                      <div className="w-7 h-7 border-2 border-[#004D40]/30 border-t-[#004D40] rounded-full animate-spin" />
+                      <span>Loading reporter identity card requests...</span>
+                    </div>
+                  ) : idCardsList.filter((c) => (idCardFilter === 'all' ? true : c.status === idCardFilter)).length === 0 ? (
+                    <div className="py-12 bg-white rounded-xl border border-dashed border-[#E0E0E0] text-center space-y-2">
+                      <BadgeCheck className="w-10 h-10 text-gray-300 mx-auto" />
+                      <p className="text-xs font-bold text-gray-500">
+                        {idCardFilter === 'pending'
+                          ? 'No pending ID card applications for review.'
+                          : `No ${idCardFilter} identity cards found.`}
+                      </p>
+                      <p className="text-[11px] text-gray-400">
+                        When reporters apply for their official Press ID Cards, requests will appear here for editorial approval.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      {idCardsList
+                        .filter((c) => (idCardFilter === 'all' ? true : c.status === idCardFilter))
+                        .map((card) => (
+                          <div
+                            key={card.id}
+                            className="bg-white p-4 rounded-xl border border-gray-200 hover:border-gray-300 shadow-xs flex flex-col justify-between space-y-3 transition-all"
+                          >
+                            <div className="flex items-start gap-3">
+                              {/* Photo */}
+                              <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 border border-gray-300 shrink-0 flex items-center justify-center">
+                                {card.photoUrl ? (
+                                  <img
+                                    src={card.photoUrl}
+                                    alt={card.fullName}
+                                    className="w-full h-full object-cover"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ) : (
+                                  <span className="font-bold text-[#004D40] text-lg">
+                                    {card.fullName.charAt(0).toUpperCase()}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Details */}
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <div className="flex items-center justify-between gap-1">
+                                  <h4 className="text-sm font-bold text-gray-900 truncate">
+                                    {card.fullName}
+                                  </h4>
+                                  <span
+                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                                      card.status === 'approved'
+                                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                        : card.status === 'rejected'
+                                        ? 'bg-red-100 text-red-800 border border-red-200'
+                                        : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                    }`}
+                                  >
+                                    {card.status}
+                                  </span>
+                                </div>
+
+                                <p className="text-xs font-bold text-[#004D40] flex items-center gap-1">
+                                  <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>{card.designation}</span>
+                                </p>
+
+                                <div className="text-[11px] text-gray-600 space-y-0.5 pt-1 border-t border-gray-100">
+                                  <p className="flex items-center gap-1 truncate">
+                                    <Phone className="w-3 h-3 text-gray-400 shrink-0" />
+                                    <span>{card.mobileNumber}</span>
+                                  </p>
+                                  <p className="flex items-center gap-1 truncate">
+                                    <FileText className="w-3 h-3 text-gray-400 shrink-0" />
+                                    <span className="uppercase">
+                                      {card.idProofType}: {card.idProofNumber}
+                                    </span>
+                                  </p>
+                                  <p className="flex items-start gap-1 text-gray-500 line-clamp-1">
+                                    <MapPin className="w-3 h-3 text-gray-400 shrink-0 mt-0.5" />
+                                    <span>{card.address}</span>
+                                  </p>
+                                  {card.cardNumber && (
+                                    <p className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded inline-block">
+                                      Card ID: {card.cardNumber}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Rejection Note */}
+                            {card.rejectionReason && (
+                              <div className="p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800">
+                                <strong>Rejection Reason:</strong> {card.rejectionReason}
+                              </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedCardForPreview(card)}
+                                className="px-2.5 py-1 text-xs font-bold text-[#004D40] hover:bg-[#E0F2F1] rounded border border-[#B2DFDB] flex items-center gap-1 transition-colors cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Preview Card</span>
+                              </button>
+
+                              <div className="flex items-center gap-1.5">
+                                {card.status !== 'approved' && (
+                                  <button
+                                    type="button"
+                                    disabled={idCardActionLoadingId === card.id}
+                                    onClick={() => handleApproveIdCard(card.id)}
+                                    className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>{idCardActionLoadingId === card.id ? 'Approving...' : 'Approve'}</span>
+                                  </button>
+                                )}
+
+                                {card.status !== 'rejected' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedCardForReject(card.id);
+                                      setCardRejectReason('');
+                                    }}
+                                    className="px-2.5 py-1 bg-white hover:bg-red-50 text-red-700 rounded text-xs font-bold border border-red-200 flex items-center gap-1 transition-colors cursor-pointer"
+                                  >
+                                    <XCircle className="w-3.5 h-3.5" />
+                                    <span>Reject</span>
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  disabled={idCardActionLoadingId === card.id}
+                                  onClick={() => handleDeleteIdCard(card.id)}
+                                  className="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                                  title="Delete / Revoke ID Card"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Inline Rejection Input Form */}
+                            {selectedCardForReject === card.id && (
+                              <div className="p-3 bg-red-50 border border-red-200 rounded-lg space-y-2 animate-in fade-in duration-150">
+                                <label className="block text-xs font-bold text-red-900">
+                                  State Rejection Reason:
+                                </label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. Unclear photograph, invalid ID proof number, or unverified address..."
+                                  value={cardRejectReason}
+                                  onChange={(e) => setCardRejectReason(e.target.value)}
+                                  className="w-full text-xs p-2 rounded border border-red-300 bg-white focus:outline-hidden"
+                                />
+                                <div className="flex justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedCardForReject(null)}
+                                    className="px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-200 rounded cursor-pointer"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={idCardActionLoadingId === card.id}
+                                    onClick={() => handleRejectIdCard(card.id)}
+                                    className="px-3 py-1 bg-red-700 hover:bg-red-800 text-white text-xs font-bold rounded uppercase tracking-wider cursor-pointer"
+                                  >
+                                    Confirm Reject
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                     </div>
                   )}
                 </div>
@@ -1430,6 +1822,25 @@ export const AdminPanel: React.FC<Props> = ({
           )}
         </div>
       </div>
+
+      {/* Admin ID Card Preview Modal */}
+      {selectedCardForPreview && (
+        <ReporterIdCardModal
+          lang={lang}
+          currentUser={{
+            id: selectedCardForPreview.userId,
+            username: selectedCardForPreview.userId,
+            name: selectedCardForPreview.fullName,
+            role: 'reporter',
+            createdAt: selectedCardForPreview.createdAt,
+            avatar: selectedCardForPreview.photoUrl,
+            idCard: selectedCardForPreview,
+          }}
+          previewCard={selectedCardForPreview}
+          isAdminPreview={true}
+          onClose={() => setSelectedCardForPreview(null)}
+        />
+      )}
     </div>
   );
 };

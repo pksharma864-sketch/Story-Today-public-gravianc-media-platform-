@@ -19,6 +19,7 @@ const PORT = 3000;
 const DATA_DIR = path.join(process.cwd(), '.data');
 const DATA_FILE = path.join(DATA_DIR, 'posts.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const ID_CARDS_FILE = path.join(DATA_DIR, 'id_cards.json');
 
 // Ensure data directory exists for local disk backup
 if (!fs.existsSync(DATA_DIR)) {
@@ -53,6 +54,7 @@ try {
 // In-Memory & Local Synchronized State
 let cachedUsers: any[] = [];
 let cachedPosts: any[] = [];
+let cachedIdCards: any[] = [];
 let cachedSettings: { adminPassword?: string; customLogo?: string | null } = {
   adminPassword: 'admin123',
   customLogo: null,
@@ -102,6 +104,7 @@ function syncToLocalDisk() {
   try {
     fs.writeFileSync(USERS_FILE, JSON.stringify(cachedUsers, null, 2), 'utf-8');
     fs.writeFileSync(DATA_FILE, JSON.stringify(cachedPosts, null, 2), 'utf-8');
+    fs.writeFileSync(ID_CARDS_FILE, JSON.stringify(cachedIdCards, null, 2), 'utf-8');
   } catch (err) {
     console.error('[Persistence] Error writing local cache backup:', err);
   }
@@ -128,6 +131,17 @@ function loadLocalFallback() {
     }
   } catch {
     cachedPosts = [];
+  }
+
+  try {
+    if (fs.existsSync(ID_CARDS_FILE)) {
+      const raw = fs.readFileSync(ID_CARDS_FILE, 'utf-8');
+      cachedIdCards = JSON.parse(raw);
+    } else {
+      cachedIdCards = [];
+    }
+  } catch {
+    cachedIdCards = [];
   }
 }
 
@@ -192,10 +206,24 @@ async function initFirestoreData() {
       console.log('[Persistence] Posts collection in Firestore is initialized and ready.');
     }
 
+    // 4. Load ID Cards
+    try {
+      const idCardsSnap = await getDocs(collection(db, 'id_cards'));
+      if (!idCardsSnap.empty) {
+        cachedIdCards = idCardsSnap.docs.map((d) => d.data());
+        console.log(`[Persistence] Loaded ${cachedIdCards.length} reporter ID cards from Firestore.`);
+      } else {
+        cachedIdCards = [];
+      }
+    } catch (err) {
+      console.warn('[Persistence] Note loading id_cards collection:', err);
+      cachedIdCards = [];
+    }
+
     // Save local snapshot
     syncToLocalDisk();
 
-    // 4. Attach Live Real-Time Firestore Sync Listeners
+    // 5. Attach Live Real-Time Firestore Sync Listeners
     onSnapshot(
       collection(db, 'posts'),
       (snapshot) => {
@@ -219,6 +247,18 @@ async function initFirestoreData() {
       },
       (err) => {
         console.error('[Firestore LiveSync] Users snapshot error:', err);
+      }
+    );
+
+    onSnapshot(
+      collection(db, 'id_cards'),
+      (snapshot) => {
+        cachedIdCards = snapshot.docs.map((d) => d.data());
+        syncToLocalDisk();
+        console.log(`[Firestore LiveSync] Updated ${cachedIdCards.length} ID cards in real-time.`);
+      },
+      (err) => {
+        console.error('[Firestore LiveSync] ID cards snapshot error:', err);
       }
     );
 
@@ -309,6 +349,43 @@ async function removePost(postId: string) {
       console.log(`[Firestore] Post permanently deleted: ${postId}`);
     } catch (err) {
       console.error(`[Firestore] FAILED to delete post ${postId}:`, err);
+      throw err;
+    }
+  }
+}
+
+// ID Card Persistence Operations (Permanent in Firestore)
+async function persistIdCard(card: any) {
+  const sanitized = sanitizeForFirestore(card);
+  const idx = cachedIdCards.findIndex((c) => c.id === sanitized.id);
+  if (idx !== -1) {
+    cachedIdCards[idx] = sanitized;
+  } else {
+    cachedIdCards.unshift(sanitized);
+  }
+  syncToLocalDisk();
+
+  if (db) {
+    try {
+      await setDoc(doc(db, 'id_cards', sanitized.id), sanitized);
+      console.log(`[Firestore] Reporter ID Card saved: ${sanitized.fullName} (${sanitized.id})`);
+    } catch (err) {
+      console.error(`[Firestore] FAILED to persist ID Card ${sanitized.id}:`, err);
+      throw err;
+    }
+  }
+}
+
+async function removeIdCard(cardId: string) {
+  cachedIdCards = cachedIdCards.filter((c) => c.id !== cardId);
+  syncToLocalDisk();
+
+  if (db) {
+    try {
+      await deleteDoc(doc(db, 'id_cards', cardId));
+      console.log(`[Firestore] ID Card deleted: ${cardId}`);
+    } catch (err) {
+      console.error(`[Firestore] FAILED to delete ID card ${cardId}:`, err);
       throw err;
     }
   }
@@ -643,7 +720,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: 'Username already exists. Please choose another.' });
     }
 
-    const newUser = {
+    const newUser: any = {
       id: 'usr_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
       name: name.trim(),
       username: cleanUsername,
@@ -656,6 +733,26 @@ async function startServer() {
       createdAt: new Date().toISOString(),
       status: 'active',
     };
+
+    // If ID card details provided during reporter registration
+    if (role === 'reporter' && req.body.idCardData) {
+      const cardData = req.body.idCardData;
+      const newCard = {
+        id: 'card_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+        userId: newUser.id,
+        fullName: cardData.fullName?.trim() || newUser.name,
+        designation: cardData.designation?.trim() || 'News Reporter',
+        address: cardData.address?.trim() || '',
+        mobileNumber: cardData.mobileNumber?.trim() || newUser.phone || '',
+        idProofType: cardData.idProofType || 'aadhaar',
+        idProofNumber: cardData.idProofNumber?.trim() || '',
+        photoUrl: cardData.photoUrl?.trim() || newUser.avatar || '',
+        status: 'pending',
+        appliedAt: new Date().toISOString(),
+      };
+      await persistIdCard(newCard);
+      newUser.idCard = newCard;
+    }
 
     await persistUser(newUser);
 
@@ -676,8 +773,232 @@ async function startServer() {
       return res.status(400).json({ success: false, error: 'Primary Administrator account cannot be deleted' });
     }
 
+    // Also remove any ID card for this user
+    const userCard = cachedIdCards.find((c) => c.userId === id);
+    if (userCard) {
+      await removeIdCard(userCard.id);
+    }
+
     await removeUser(id);
     res.json({ success: true, message: 'User account removed permanently from database.' });
+  });
+
+  // ==========================================
+  // REPORTER IDENTITY CARD APIs
+  // ==========================================
+
+  // Get all ID card applications (Admin)
+  app.get('/api/id-cards', (req, res) => {
+    const { status, search } = req.query;
+    let cards = [...cachedIdCards];
+
+    if (status && status !== 'all') {
+      cards = cards.filter((c) => c.status === status);
+    }
+
+    if (search) {
+      const q = String(search).toLowerCase();
+      cards = cards.filter(
+        (c) =>
+          c.fullName?.toLowerCase().includes(q) ||
+          c.cardNumber?.toLowerCase().includes(q) ||
+          c.mobileNumber?.includes(q) ||
+          c.idProofNumber?.toLowerCase().includes(q) ||
+          c.designation?.toLowerCase().includes(q)
+      );
+    }
+
+    // Attach user profile info if available
+    const enriched = cards.map((card) => {
+      const user = cachedUsers.find((u) => u.id === card.userId);
+      return {
+        ...card,
+        username: user?.username || '',
+        userEmail: user?.email || '',
+      };
+    });
+
+    res.json({ success: true, idCards: enriched });
+  });
+
+  // Get ID card for a specific user
+  app.get('/api/id-cards/user/:userId', (req, res) => {
+    const { userId } = req.params;
+    const card = cachedIdCards.find((c) => c.userId === userId);
+    if (!card) {
+      return res.json({ success: true, idCard: null });
+    }
+    res.json({ success: true, idCard: card });
+  });
+
+  // Apply or update Reporter ID Card application
+  app.post('/api/id-cards/apply', async (req, res) => {
+    const {
+      userId,
+      fullName,
+      designation,
+      address,
+      mobileNumber,
+      idProofType,
+      idProofNumber,
+      photoUrl,
+    } = req.body;
+
+    if (!userId || !fullName || !address || !mobileNumber || !idProofNumber) {
+      return res.status(400).json({
+        success: false,
+        error: 'Full Name, Designation, Address, Mobile Number, and ID Proof Number are required.',
+      });
+    }
+
+    // Verify user exists and is a reporter
+    const userIndex = cachedUsers.findIndex((u) => u.id === userId);
+    if (userIndex === -1) {
+      return res.status(404).json({ success: false, error: 'User account not found.' });
+    }
+
+    const existingCardIndex = cachedIdCards.findIndex((c) => c.userId === userId);
+    let card: any;
+
+    if (existingCardIndex !== -1) {
+      // Update existing application to pending review
+      card = {
+        ...cachedIdCards[existingCardIndex],
+        fullName: fullName.trim(),
+        designation: designation?.trim() || 'News Reporter',
+        address: address.trim(),
+        mobileNumber: mobileNumber.trim(),
+        idProofType: idProofType || 'aadhaar',
+        idProofNumber: idProofNumber.trim(),
+        photoUrl: photoUrl?.trim() || cachedUsers[userIndex].avatar || '',
+        status: 'pending',
+        appliedAt: new Date().toISOString(),
+        rejectionReason: undefined,
+      };
+    } else {
+      // Create fresh ID Card application
+      card = {
+        id: 'card_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+        userId,
+        fullName: fullName.trim(),
+        designation: designation?.trim() || 'News Reporter',
+        address: address.trim(),
+        mobileNumber: mobileNumber.trim(),
+        idProofType: idProofType || 'aadhaar',
+        idProofNumber: idProofNumber.trim(),
+        photoUrl: photoUrl?.trim() || cachedUsers[userIndex].avatar || '',
+        status: 'pending',
+        appliedAt: new Date().toISOString(),
+      };
+    }
+
+    await persistIdCard(card);
+
+    // Also update user's avatar if they provided a new photo for ID card
+    if (photoUrl && (!cachedUsers[userIndex].avatar || cachedUsers[userIndex].avatar === '')) {
+      cachedUsers[userIndex].avatar = photoUrl;
+    }
+    cachedUsers[userIndex].idCard = card;
+    await persistUser(cachedUsers[userIndex]);
+
+    res.status(201).json({
+      success: true,
+      idCard: card,
+      message: 'Identity Card application submitted successfully. Pending Admin approval.',
+    });
+  });
+
+  // Approve Reporter ID Card (Admin)
+  app.post('/api/id-cards/:id/approve', async (req, res) => {
+    const { id } = req.params;
+    const { approvedBy } = req.body;
+
+    const cardIndex = cachedIdCards.findIndex((c) => c.id === id);
+    if (cardIndex === -1) {
+      return res.status(404).json({ success: false, error: 'ID card application not found.' });
+    }
+
+    const card = cachedIdCards[cardIndex];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const randomSeq = Math.floor(1000 + Math.random() * 9000);
+    const cardNumber = card.cardNumber || `ST-PRESS-${currentYear}-${randomSeq}`;
+
+    // Valid for 2 years
+    const expiryDate = new Date(now.getTime() + 2 * 365 * 24 * 60 * 60 * 1000).toISOString();
+
+    card.status = 'approved';
+    card.cardNumber = cardNumber;
+    card.approvedAt = now.toISOString();
+    card.approvedBy = approvedBy?.trim() || 'Chief Editor & Admin';
+    card.validUntil = expiryDate;
+    card.rejectionReason = undefined;
+
+    await persistIdCard(card);
+
+    // Update in user object
+    const userIndex = cachedUsers.findIndex((u) => u.id === card.userId);
+    if (userIndex !== -1) {
+      cachedUsers[userIndex].idCard = card;
+      await persistUser(cachedUsers[userIndex]);
+    }
+
+    res.json({
+      success: true,
+      idCard: card,
+      message: `Identity Card approved successfully. Issued Card No: ${cardNumber}`,
+    });
+  });
+
+  // Reject Reporter ID Card (Admin)
+  app.post('/api/id-cards/:id/reject', async (req, res) => {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const cardIndex = cachedIdCards.findIndex((c) => c.id === id);
+    if (cardIndex === -1) {
+      return res.status(404).json({ success: false, error: 'ID card application not found.' });
+    }
+
+    const card = cachedIdCards[cardIndex];
+    card.status = 'rejected';
+    card.rejectionReason = reason?.trim() || 'Identity proof could not be verified. Please re-check your details and re-apply.';
+
+    await persistIdCard(card);
+
+    // Update in user object
+    const userIndex = cachedUsers.findIndex((u) => u.id === card.userId);
+    if (userIndex !== -1) {
+      cachedUsers[userIndex].idCard = card;
+      await persistUser(cachedUsers[userIndex]);
+    }
+
+    res.json({
+      success: true,
+      idCard: card,
+      message: 'Identity Card application marked as rejected.',
+    });
+  });
+
+  // Delete / Revoke Reporter ID Card (Admin)
+  app.delete('/api/id-cards/:id', async (req, res) => {
+    const { id } = req.params;
+    const card = cachedIdCards.find((c) => c.id === id);
+
+    if (!card) {
+      return res.status(404).json({ success: false, error: 'ID card application not found.' });
+    }
+
+    await removeIdCard(id);
+
+    // Remove from user object
+    const userIndex = cachedUsers.findIndex((u) => u.id === card.userId);
+    if (userIndex !== -1) {
+      delete cachedUsers[userIndex].idCard;
+      await persistUser(cachedUsers[userIndex]);
+    }
+
+    res.json({ success: true, message: 'Identity Card record removed permanently.' });
   });
 
   // ==========================================

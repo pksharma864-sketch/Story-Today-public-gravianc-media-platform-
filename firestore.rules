@@ -23,6 +23,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Reporter Identity Cards collection (managed by Admin and applied by Reporters)
+    match /id_cards/{idCardId} {
+      allow read, write: if true;
+    }
+
     // Test connection doc
     match /test/{docId} {
       allow read, write: if true;

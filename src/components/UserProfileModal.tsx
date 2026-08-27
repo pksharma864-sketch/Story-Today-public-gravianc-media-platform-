@@ -16,6 +16,9 @@ import {
   Calendar,
   Sparkles,
   Edit3,
+  BadgeCheck,
+  Download,
+  Clock,
 } from 'lucide-react';
 
 interface Props {
@@ -23,6 +26,7 @@ interface Props {
   lang: Language;
   onClose: () => void;
   onProfileUpdated: (updatedUser: UserAccount) => void;
+  onOpenIdCardModal?: () => void;
 }
 
 export const UserProfileModal: React.FC<Props> = ({
@@ -30,6 +34,7 @@ export const UserProfileModal: React.FC<Props> = ({
   lang,
   onClose,
   onProfileUpdated,
+  onOpenIdCardModal,
 }) => {
   const [avatar, setAvatar] = useState<string | null>(user.avatar || null);
   const [name, setName] = useState(user.name || '');
@@ -321,6 +326,80 @@ export const UserProfileModal: React.FC<Props> = ({
               </div>
             </div>
           </div>
+
+          {/* Reporter Press Identity Card Banner (For Reporters & Admins) */}
+          {(user.role === 'reporter' || user.role === 'admin') && (
+            <div className="p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 rounded-xl border border-emerald-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#004D40] text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                  <BadgeCheck className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide">
+                      {lang === 'hi' ? 'पत्रकार पहचान पत्र (Press ID Card)' : 'Reporter Press Identity Card'}
+                    </h4>
+                    {user.idCard?.status === 'approved' ? (
+                      <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        {lang === 'hi' ? 'स्वीकृत व सक्रिय' : 'Approved & Active'}
+                      </span>
+                    ) : user.idCard?.status === 'pending' ? (
+                      <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                        {lang === 'hi' ? 'समीक्षाधीन' : 'Pending Approval'}
+                      </span>
+                    ) : user.idCard?.status === 'rejected' ? (
+                      <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-red-100 text-red-800 border border-red-300">
+                        {lang === 'hi' ? 'अस्वीकृत' : 'Rejected'}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-gray-100 text-gray-700 border border-gray-300">
+                        {lang === 'hi' ? 'आवेदन उपलब्ध' : 'Available'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-600 mt-0.5">
+                    {user.idCard?.status === 'approved'
+                      ? lang === 'hi'
+                        ? 'आपका पहचान पत्र अनुमोदित है। आप इसे सीधे डाउनलोड या प्रिंट कर सकते हैं।'
+                        : 'Your ID card is approved and active. Ready for download & print.'
+                      : user.idCard?.status === 'pending'
+                      ? lang === 'hi'
+                        ? 'पहचान पत्र का आवेदन संपादक की समीक्षा में है।'
+                        : 'Application is awaiting Admin verification & approval.'
+                      : lang === 'hi'
+                      ? 'स्टोरी टुडे का आधिकारिक पत्रकार परिचय पत्र प्राप्त करने हेतु आवेदन करें।'
+                      : 'Apply for your official Story Today Press Identity Card.'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                id="btn-profile-open-id-card"
+                type="button"
+                onClick={() => {
+                  if (onOpenIdCardModal) onOpenIdCardModal();
+                }}
+                className="px-3.5 py-2 bg-[#004D40] hover:bg-[#00382E] text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors shadow-xs shrink-0 cursor-pointer"
+              >
+                {user.idCard?.status === 'approved' ? (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>{lang === 'hi' ? 'कार्ड देखें व डाउनलोड करें' : 'View & Download ID Card'}</span>
+                  </>
+                ) : user.idCard?.status === 'pending' ? (
+                  <>
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{lang === 'hi' ? 'स्थिति देखें' : 'View Application Status'}</span>
+                  </>
+                ) : (
+                  <>
+                    <BadgeCheck className="w-3.5 h-3.5" />
+                    <span>{lang === 'hi' ? 'पहचान पत्र हेतु आवेदन करें' : 'Apply for Press ID'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
 
           {/* Form Fields for Profile Info */}
           <form onSubmit={handleSaveProfile} className="space-y-4">

@@ -26,6 +26,8 @@ import { CreatePostModal } from './components/CreatePostModal';
 import { ShareModal } from './components/ShareModal';
 import { AdminPanel } from './components/AdminPanel';
 import { UserLoginModal } from './components/UserLoginModal';
+import { UserProfileModal } from './components/UserProfileModal';
+import { ReporterIdCardModal } from './components/ReporterIdCardModal';
 import { MobileFrame } from './components/MobileFrame';
 import { StoryTodayLogo } from './components/StoryTodayLogo';
 import { SplashScreen } from './components/SplashScreen';
@@ -112,6 +114,8 @@ export default function App() {
   const [createInitialType, setCreateInitialType] = useState<'news' | 'grievance'>('news');
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
+  const [showIdCardModal, setShowIdCardModal] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [submissionFeedback, setSubmissionFeedback] = useState<string | null>(null);
 
@@ -468,6 +472,8 @@ export default function App() {
             setAuthModalMode(initialMode || 'login');
             setShowLoginModal(true);
           }}
+          onOpenProfileModal={() => setShowProfileModal(true)}
+          onOpenIdCardModal={() => setShowIdCardModal(true)}
           onUserLogout={handleUserLogout}
           pendingApprovalsCount={pendingApprovalsCount}
           searchQuery={searchQuery}
@@ -811,6 +817,36 @@ export default function App() {
             initialMode={authModalMode}
             onClose={() => setShowLoginModal(false)}
             onLoginSuccess={handleLoginSuccess}
+          />
+        )}
+
+        {/* User Profile Modal */}
+        {showProfileModal && currentUser && (
+          <UserProfileModal
+            user={currentUser}
+            lang={lang}
+            onClose={() => setShowProfileModal(false)}
+            onProfileUpdated={(updatedUser) => {
+              setCurrentUser(updatedUser);
+              localStorage.setItem('story_today_current_user', JSON.stringify(updatedUser));
+            }}
+            onOpenIdCardModal={() => {
+              setShowProfileModal(false);
+              setShowIdCardModal(true);
+            }}
+          />
+        )}
+
+        {/* Reporter Identity Card Modal */}
+        {showIdCardModal && currentUser && (
+          <ReporterIdCardModal
+            lang={lang}
+            currentUser={currentUser}
+            onClose={() => setShowIdCardModal(false)}
+            onUserUpdate={(updatedUser) => {
+              setCurrentUser(updatedUser);
+              localStorage.setItem('story_today_current_user', JSON.stringify(updatedUser));
+            }}
           />
         )}
 

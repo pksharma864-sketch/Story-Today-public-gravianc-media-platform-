@@ -74,6 +74,36 @@ export interface PostItem {
   comments?: PostComment[];
 }
 
+export type IdCardStatus = 'not_applied' | 'pending' | 'approved' | 'rejected';
+export type ReporterDesignation =
+  | 'News Reporter'
+  | 'Staff Reporter'
+  | 'Blogger'
+  | 'Correspondent'
+  | 'Senior Correspondent'
+  | 'Bureau Chief'
+  | 'Citizen Journalist'
+  | 'Photojournalist';
+
+export interface ReporterIdCard {
+  id: string;
+  userId: string;
+  fullName: string;
+  designation: ReporterDesignation | string;
+  address: string;
+  mobileNumber: string;
+  idProofType: 'aadhaar' | 'passport' | 'voter_id' | 'other';
+  idProofNumber: string;
+  photoUrl: string;
+  status: IdCardStatus;
+  appliedAt: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  rejectionReason?: string;
+  cardNumber?: string; // e.g., "ST-PRESS-2026-0842"
+  validUntil?: string;
+}
+
 export interface UserAccount {
   id: string;
   name: string;
@@ -86,6 +116,7 @@ export interface UserAccount {
   email?: string;
   phone?: string;
   bio?: string;
+  idCard?: ReporterIdCard;
 }
 
 export interface AppStats {

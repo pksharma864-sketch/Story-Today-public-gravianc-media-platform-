@@ -26,6 +26,7 @@ import {
   Award,
   Camera,
   Edit3,
+  BadgeCheck,
 } from 'lucide-react';
 
 interface Props {
@@ -36,6 +37,7 @@ interface Props {
   currentUser: UserAccount | null;
   onOpenLoginModal: (mode?: 'login' | 'register') => void;
   onOpenProfileModal?: () => void;
+  onOpenIdCardModal?: () => void;
   onUserLogout: () => void;
   pendingApprovalsCount?: number;
   searchQuery: string;
@@ -56,6 +58,7 @@ export const Header: React.FC<Props> = ({
   currentUser,
   onOpenLoginModal,
   onOpenProfileModal,
+  onOpenIdCardModal,
   onUserLogout,
   pendingApprovalsCount = 0,
   searchQuery,
@@ -258,7 +261,7 @@ export const Header: React.FC<Props> = ({
                   </div>
 
                   {/* Profile Photo & Edit Action */}
-                  <div className="py-2 border-b border-gray-100">
+                  <div className="py-2 border-b border-gray-100 space-y-1">
                     <button
                       id="btn-header-edit-profile"
                       onClick={() => {
@@ -273,6 +276,35 @@ export const Header: React.FC<Props> = ({
                       </div>
                       <Edit3 className="w-3 h-3 text-[#004D40]" />
                     </button>
+
+                    {(currentUser.role === 'reporter' || currentUser.role === 'admin') && (
+                      <button
+                        id="btn-header-press-id-card"
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onOpenIdCardModal) onOpenIdCardModal();
+                        }}
+                        className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg font-bold transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <BadgeCheck className="w-3.5 h-3.5 text-emerald-700" />
+                          <span>{lang === 'hi' ? 'पत्रकार पहचान पत्र (Press ID)' : 'Press Identity Card'}</span>
+                        </div>
+                        {currentUser.idCard?.status === 'approved' ? (
+                          <span className="text-[9px] font-bold bg-emerald-600 text-white px-1.5 py-0.2 rounded">
+                            {lang === 'hi' ? 'सक्रिय' : 'Active'}
+                          </span>
+                        ) : currentUser.idCard?.status === 'pending' ? (
+                          <span className="text-[9px] font-bold bg-amber-500 text-white px-1.5 py-0.2 rounded">
+                            {lang === 'hi' ? 'प्रतीक्षित' : 'Pending'}
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold bg-gray-200 text-gray-700 px-1.5 py-0.2 rounded">
+                            {lang === 'hi' ? 'आवेदन' : 'Apply'}
+                          </span>
+                        )}
+                      </button>
+                    )}
                   </div>
 
                   {/* Account Capabilities Info */}

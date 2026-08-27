@@ -1,4 +1,4 @@
-import { PostItem, AppStats, GrievanceStatus, UserAccount, ApprovalStatus } from '../types';
+import { PostItem, AppStats, GrievanceStatus, UserAccount, ApprovalStatus, ReporterIdCard } from '../types';
 
 const API_BASE = '/api';
 
@@ -361,6 +361,115 @@ export async function updateBrandingLogo(logo: string | null): Promise<boolean> 
   } catch (err) {
     console.error('API updateBrandingLogo error:', err);
     return false;
+  }
+}
+
+// ==========================================
+// REPORTER IDENTITY CARD API METHODS
+// ==========================================
+
+export async function fetchIdCards(filters?: {
+  status?: string;
+  search?: string;
+}): Promise<ReporterIdCard[]> {
+  try {
+    const params = new URLSearchParams();
+    if (filters?.status && filters.status !== 'all') params.append('status', filters.status);
+    if (filters?.search) params.append('search', filters.search);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${API_BASE}/id-cards${query}`);
+    if (!res.ok) throw new Error('Failed to fetch ID cards');
+    const data = await res.json();
+    return data.idCards || [];
+  } catch (err) {
+    console.error('API fetchIdCards error:', err);
+    return [];
+  }
+}
+
+export async function fetchUserIdCard(userId: string): Promise<ReporterIdCard | null> {
+  try {
+    const res = await fetch(`${API_BASE}/id-cards/user/${userId}`);
+    if (!res.ok) throw new Error('Failed to fetch user ID card');
+    const data = await res.json();
+    return data.idCard || null;
+  } catch (err) {
+    console.error('API fetchUserIdCard error:', err);
+    return null;
+  }
+}
+
+export async function applyForIdCard(payload: {
+  userId: string;
+  fullName: string;
+  designation: string;
+  address: string;
+  mobileNumber: string;
+  idProofType: string;
+  idProofNumber: string;
+  photoUrl?: string;
+}): Promise<{ success: boolean; idCard?: ReporterIdCard; error?: string; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/id-cards/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('API applyForIdCard error:', err);
+    return { success: false, error: 'Network error while submitting ID card application' };
+  }
+}
+
+export async function approveIdCard(
+  cardId: string,
+  approvedBy?: string
+): Promise<{ success: boolean; idCard?: ReporterIdCard; error?: string; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/id-cards/${cardId}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ approvedBy }),
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('API approveIdCard error:', err);
+    return { success: false, error: 'Network error while approving ID card' };
+  }
+}
+
+export async function rejectIdCard(
+  cardId: string,
+  reason: string
+): Promise<{ success: boolean; idCard?: ReporterIdCard; error?: string; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/id-cards/${cardId}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('API rejectIdCard error:', err);
+    return { success: false, error: 'Network error while rejecting ID card' };
+  }
+}
+
+export async function deleteIdCard(cardId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/id-cards/${cardId}`, {
+      method: 'DELETE',
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('API deleteIdCard error:', err);
+    return { success: false, error: 'Network error while deleting ID card' };
   }
 }
 
