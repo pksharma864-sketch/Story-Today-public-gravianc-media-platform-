@@ -585,16 +585,58 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
         ctx.restore();
       };
 
-      // Load user photo
+      // Load image helper
       const loadImg = (src: string): Promise<HTMLImageElement> => {
         return new Promise((resolve, reject) => {
           const img = new Image();
-          img.crossOrigin = 'anonymous';
+          if (!src.startsWith('data:')) {
+            img.crossOrigin = 'anonymous';
+          }
           img.onload = () => resolve(img);
-          img.onerror = () => reject();
+          img.onerror = (e) => reject(e);
           img.src = src;
         });
       };
+
+      // Pre-load the official Story Today Logo Image (Custom uploaded or official vector SVG)
+      let logoImg: HTMLImageElement | null = null;
+      try {
+        const storedLogo = localStorage.getItem('story_today_custom_logo');
+        if (storedLogo && storedLogo.trim() !== '') {
+          try {
+            logoImg = await loadImg(storedLogo);
+          } catch {
+            logoImg = null;
+          }
+        }
+        if (!logoImg) {
+          const svgData = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 54 54" width="216" height="216">
+            <defs>
+              <filter id="logoShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.3" />
+              </filter>
+            </defs>
+            <rect x="3" y="3" width="48" height="48" rx="13" fill="#004D40" filter="url(#logoShadow)" />
+            <rect x="4" y="4" width="46" height="46" rx="12" stroke="#80CBC4" stroke-width="1.5" stroke-opacity="0.7" fill="none" />
+            <rect x="11.5" y="10.5" width="31" height="33" rx="3.5" fill="#002D25" />
+            <rect x="13.5" y="11.5" width="27" height="31" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.75" />
+            <rect x="16.5" y="14.5" width="21" height="5.5" rx="1.5" fill="#E11D48" />
+            <rect x="16.5" y="22.5" width="13" height="3" rx="0.8" fill="#004D40" />
+            <rect x="16.5" y="27.5" width="21" height="2" rx="0.6" fill="#1E293B" />
+            <rect x="16.5" y="31" width="21" height="2" rx="0.6" fill="#334155" />
+            <rect x="16.5" y="34.5" width="15" height="2" rx="0.6" fill="#64748B" />
+            <rect x="16.5" y="38" width="11" height="1.8" rx="0.5" fill="#94A3B8" />
+            <circle cx="34.5" cy="23.5" r="4" fill="#004D40" />
+            <circle cx="34.5" cy="23.5" r="2.2" fill="#E0F2F1" />
+            <circle cx="34.5" cy="23.5" r="1.1" fill="#E11D48" />
+            <circle cx="48" cy="6" r="4.5" fill="#E11D48" stroke="#FFFFFF" stroke-width="1.5" />
+          </svg>`;
+          const encodedSvg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
+          logoImg = await loadImg(encodedSvg);
+        }
+      } catch (err) {
+        console.warn('Could not load vector logo image, using canvas emblem fallback', err);
+      }
 
       // -------------------------------------------------------------
       // 1. DRAW FRONT CARD (x: margin, y: margin)
@@ -619,20 +661,24 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       ctx.lineWidth = 3;
 
       // Header Story Today Logo + Typography
-      drawLogoEmblem(fx + 45, fy + 30, 68);
+      if (logoImg) {
+        ctx.drawImage(logoImg, fx + 42, fy + 25, 74, 74);
+      } else {
+        drawLogoEmblem(fx + 42, fy + 25, 74);
+      }
 
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 36px serif';
+      ctx.font = 'bold 35px serif, "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText('STORY TODAY', fx + 130, fy + 65);
+      ctx.fillText('STORY TODAY', fx + 132, fy + 64);
 
       ctx.font = 'bold 15px sans-serif';
       ctx.fillStyle = '#A7F3D0';
-      ctx.fillText('PRESS & MEDIA CREDENTIAL', fx + 130, fy + 90);
+      ctx.fillText('PRESS & MEDIA CREDENTIAL', fx + 132, fy + 89);
 
       ctx.font = '13px sans-serif';
       ctx.fillStyle = '#E0F2F1';
-      ctx.fillText('राष्ट्रीय एवं प्रांतीय स्वतंत्र पत्रकारिता मंच', fx + 130, fy + 112);
+      ctx.fillText('राष्ट्रीय एवं प्रांतीय स्वतंत्र पत्रकारिता मंच', fx + 132, fy + 111);
 
       // Gold Accent Strip
       ctx.fillStyle = '#D97706';
@@ -768,15 +814,19 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       ctx.fillStyle = '#D97706';
       ctx.fillRect(bx, by + 125, cardWidth, 6);
 
-      drawLogoEmblem(bx + 35, by + 28, 64);
+      if (logoImg) {
+        ctx.drawImage(logoImg, bx + 36, by + 26, 68, 68);
+      } else {
+        drawLogoEmblem(bx + 36, by + 26, 68);
+      }
 
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 24px serif';
+      ctx.font = 'bold 24px serif, "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText('STORY TODAY — PRESS RECOGNITION', bx + 115, by + 65);
+      ctx.fillText('STORY TODAY — PRESS RECOGNITION', bx + 120, by + 65);
       ctx.font = '13px sans-serif';
       ctx.fillStyle = '#A7F3D0';
-      ctx.fillText('Editorial Guidelines & Legal Declarations', bx + 115, by + 92);
+      ctx.fillText('Editorial Guidelines & Legal Declarations', bx + 120, by + 92);
 
       // Crucial Disclaimer Box (Required by guidelines)
       const discY = by + 155;
