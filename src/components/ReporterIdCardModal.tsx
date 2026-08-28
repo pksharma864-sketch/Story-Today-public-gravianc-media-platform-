@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { jsPDF } from 'jspdf';
 import {
   ReporterIdCard,
   UserAccount,
@@ -27,7 +28,171 @@ import {
   RotateCw,
   Eye,
   Info,
+  Award,
+  Check,
 } from 'lucide-react';
+
+// Official Story Today Seal Stamp Component
+export const StoryTodaySeal: React.FC<{
+  size?: number;
+  className?: string;
+  variant?: 'emerald' | 'crimson' | 'gold';
+}> = ({ size = 96, className = '', variant = 'emerald' }) => {
+  const colorMap = {
+    emerald: {
+      primary: '#004D40',
+      secondary: '#059669',
+      accent: '#D97706',
+      bg: '#ECFDF5',
+      border: '#004D40',
+    },
+    crimson: {
+      primary: '#991B1B',
+      secondary: '#DC2626',
+      accent: '#B45309',
+      bg: '#FEF2F2',
+      border: '#991B1B',
+    },
+    gold: {
+      primary: '#92400E',
+      secondary: '#D97706',
+      accent: '#F59E0B',
+      bg: '#FFFBEB',
+      border: '#B45309',
+    },
+  };
+
+  const colors = colorMap[variant] || colorMap.emerald;
+
+  return (
+    <div
+      className={`relative inline-flex items-center justify-center select-none ${className}`}
+      style={{ width: size, height: size }}
+      title="Story Today Official Editorial Seal"
+    >
+      <svg
+        viewBox="0 0 200 200"
+        className="w-full h-full filter drop-shadow-xs transition-transform duration-300"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* Outer Serrated Starburst / Beaded Rim */}
+        <circle
+          cx="100"
+          cy="100"
+          r="95"
+          stroke={colors.primary}
+          strokeWidth="2"
+          strokeDasharray="4 2.5"
+        />
+        <circle cx="100" cy="100" r="91" stroke={colors.primary} strokeWidth="3" />
+        <circle cx="100" cy="100" r="86" stroke={colors.secondary} strokeWidth="1.2" />
+
+        {/* Inner Ring */}
+        <circle cx="100" cy="100" r="62" stroke={colors.primary} strokeWidth="2.5" />
+        <circle cx="100" cy="100" r="58" stroke={colors.secondary} strokeWidth="1" strokeDasharray="2 2" />
+
+        {/* Circular Text Paths */}
+        <defs>
+          <path id="sealTopArc" d="M 23, 100 A 77, 77 0 1, 1 177, 100" />
+          <path id="sealBottomArc" d="M 177, 100 A 77, 77 0 0, 1 23, 100" />
+        </defs>
+
+        <text
+          fill={colors.primary}
+          style={{
+            fontSize: '11px',
+            fontWeight: 900,
+            fontFamily: 'serif',
+            letterSpacing: '2.5px',
+          }}
+        >
+          <textPath href="#sealTopArc" startOffset="50%" textAnchor="middle">
+            ★ STORY TODAY PRESS ★
+          </textPath>
+        </text>
+
+        <text
+          fill={colors.secondary}
+          style={{
+            fontSize: '9.5px',
+            fontWeight: 800,
+            fontFamily: 'sans-serif',
+            letterSpacing: '1.8px',
+          }}
+        >
+          <textPath href="#sealBottomArc" startOffset="50%" textAnchor="middle">
+            EDITORIAL BUREAU • NEW DELHI
+          </textPath>
+        </text>
+
+        {/* Center Emblem Background */}
+        <circle cx="100" cy="100" r="55" fill={colors.bg} fillOpacity="0.85" />
+
+        {/* Pen Nib & Star Emblem */}
+        <g transform="translate(100, 75) scale(0.9)">
+          <path
+            d="M 0, -18 L 12, -2 L 7, 14 L -7, 14 L -12, -2 Z"
+            fill={colors.primary}
+          />
+          <path
+            d="M 0, -18 L 0, 8"
+            stroke="#FFFFFF"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+          <circle cx="0" cy="8" r="1.8" fill="#FFFFFF" />
+          <circle cx="-16" cy="2" r="2.5" fill={colors.accent} />
+          <circle cx="16" cy="2" r="2.5" fill={colors.accent} />
+        </g>
+
+        {/* Center Official Text */}
+        <text
+          x="100"
+          y="108"
+          textAnchor="middle"
+          fill={colors.primary}
+          style={{
+            fontSize: '12px',
+            fontWeight: 900,
+            fontFamily: 'sans-serif',
+            letterSpacing: '1.5px',
+          }}
+        >
+          OFFICIAL
+        </text>
+        <text
+          x="100"
+          y="122"
+          textAnchor="middle"
+          fill={colors.accent}
+          style={{
+            fontSize: '10.5px',
+            fontWeight: 800,
+            fontFamily: 'sans-serif',
+            letterSpacing: '2px',
+          }}
+        >
+          ★ SEAL ★
+        </text>
+        <text
+          x="100"
+          y="134"
+          textAnchor="middle"
+          fill={colors.secondary}
+          style={{
+            fontSize: '8px',
+            fontWeight: 800,
+            fontFamily: 'monospace',
+            letterSpacing: '1px',
+          }}
+        >
+          VERIFIED PRESS
+        </text>
+      </svg>
+    </div>
+  );
+};
 
 interface ReporterIdCardModalProps {
   lang: Language;
@@ -132,7 +297,7 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
     loadCard();
   }, [currentUser.id, previewCard]);
 
-  // Handle Photo upload
+  // Handle Photo upload with client-side optimization
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -142,16 +307,45 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage(lang === 'hi' ? 'फ़ाइल का आकार 5MB से कम होना चाहिए।' : 'Image size must be under 5MB.');
-      return;
-    }
-
     const reader = new FileReader();
     reader.onload = () => {
-      const result = reader.result as string;
-      setPhotoUrl(result);
-      setErrorMessage(null);
+      const rawDataUrl = reader.result as string;
+      
+      // Auto-compress & scale image using an offscreen canvas
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 600;
+        let w = img.width;
+        let h = img.height;
+
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+          setPhotoUrl(compressedDataUrl);
+        } else {
+          setPhotoUrl(rawDataUrl);
+        }
+        setErrorMessage(null);
+      };
+      img.onerror = () => {
+        setPhotoUrl(rawDataUrl);
+        setErrorMessage(null);
+      };
+      img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -194,7 +388,7 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
     setIsSubmitting(true);
     try {
       const result = await applyForIdCard({
-        userId: currentUser.id,
+        userId: currentUser.id || currentUser.username || 'user_reporter',
         fullName: fullName.trim(),
         designation: designation.trim(),
         address: address.trim(),
@@ -222,37 +416,37 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       } else {
         setErrorMessage(result.error || 'Failed to submit application.');
       }
-    } catch (err) {
-      setErrorMessage('Network error while applying for ID Card.');
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Network error while applying for ID Card.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // High-Resolution Card Download Engine using HTML5 Canvas
+  // High-Resolution Card Download Engine using HTML5 Canvas & jsPDF (Official PDF Format)
   const handleDownloadCard = async () => {
     if (!idCard || idCard.status !== 'approved') return;
     setIsDownloading(true);
 
     try {
-      // Create offscreen canvas for high-DPI rendering (800x1200 high-res card pair)
+      // Create offscreen canvas for high-DPI rendering (300 DPI print quality)
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      const cardWidth = 700;
-      const cardHeight = 1050;
+      const cardWidth = 720;
+      const cardHeight = 1080;
       const margin = 40;
 
-      // Dual layout: Front & Back side-by-side
+      // Dual layout: Front & Back side-by-side on canvas
       canvas.width = cardWidth * 2 + margin * 3;
       canvas.height = cardHeight + margin * 2;
 
-      // Fill Canvas Background
-      ctx.fillStyle = '#111827';
+      // Fill Clean Neutral Background for PDF
+      ctx.fillStyle = '#0F172A';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Helper function to draw rounded rectangle
+      // Helper function to draw rounded rectangle with optional fill and border
       const drawRoundRect = (
         x: number,
         y: number,
@@ -283,6 +477,114 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
         }
       };
 
+      // Helper to draw security guilloche background pattern
+      const drawSecurityPattern = (x: number, y: number, w: number, h: number) => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, w, h);
+        ctx.clip();
+        ctx.strokeStyle = 'rgba(0, 77, 64, 0.04)';
+        ctx.lineWidth = 1;
+        for (let i = -w; i < w + h; i += 24) {
+          ctx.beginPath();
+          ctx.moveTo(x + i, y);
+          ctx.lineTo(x + i + h, y + h);
+          ctx.stroke();
+        }
+        for (let i = 0; i < w + h * 2; i += 24) {
+          ctx.beginPath();
+          ctx.moveTo(x + i, y + h);
+          ctx.lineTo(x + i - h, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      };
+
+      // Helper to draw the official Story Today seal stamp in canvas
+      const drawOfficialSeal = (cx: number, cy: number, radius: number) => {
+        ctx.save();
+        // Outer dashed security circle
+        ctx.strokeStyle = '#004D40';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner solid circles
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 6, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 24, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Background core
+        ctx.fillStyle = '#ECFDF5';
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 25, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Center emblem text
+        ctx.fillStyle = '#004D40';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('OFFICIAL', cx, cy - 14);
+
+        ctx.fillStyle = '#D97706';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText('★ SEAL ★', cx, cy);
+
+        ctx.fillStyle = '#059669';
+        ctx.font = 'bold 8px monospace';
+        ctx.fillText('PRESS BUREAU', cx, cy + 12);
+        ctx.fillText('NEW DELHI', cx, cy + 22);
+
+        // Circular perimeter text
+        ctx.fillStyle = '#004D40';
+        ctx.font = 'bold 9px serif';
+        const topText = 'STORY TODAY • PRESS CREDENTIAL';
+        const angleStep = Math.PI / (topText.length + 1);
+        for (let i = 0; i < topText.length; i++) {
+          const char = topText[i];
+          const angle = -Math.PI * 0.85 + (i + 1) * angleStep;
+          const tx = cx + (radius - 14) * Math.cos(angle);
+          const ty = cy + (radius - 14) * Math.sin(angle);
+          ctx.save();
+          ctx.translate(tx, ty);
+          ctx.rotate(angle + Math.PI / 2);
+          ctx.fillText(char, 0, 0);
+          ctx.restore();
+        }
+        ctx.restore();
+      };
+
+      // Helper to draw official Story Today Logo Emblem in canvas
+      const drawLogoEmblem = (lx: number, ly: number, size: number) => {
+        ctx.save();
+        // Base rounded shield
+        drawRoundRect(lx, ly, size, size, 12, '#004D40', '#80CBC4', 1.5);
+        // Newspaper sheet
+        drawRoundRect(lx + size * 0.2, ly + size * 0.16, size * 0.6, size * 0.68, 6, '#FFFFFF');
+        // Top red masthead bar
+        drawRoundRect(lx + size * 0.26, ly + size * 0.22, size * 0.48, size * 0.12, 3, '#E11D48');
+        // Headline bar
+        drawRoundRect(lx + size * 0.26, ly + size * 0.4, size * 0.3, size * 0.06, 2, '#004D40');
+        // News lines
+        drawRoundRect(lx + size * 0.26, ly + size * 0.52, size * 0.48, size * 0.04, 1, '#1E293B');
+        drawRoundRect(lx + size * 0.26, ly + size * 0.6, size * 0.48, size * 0.04, 1, '#475569');
+        drawRoundRect(lx + size * 0.26, ly + size * 0.68, size * 0.32, size * 0.04, 1, '#64748B');
+        // Beacon dot
+        ctx.fillStyle = '#059669';
+        ctx.beginPath();
+        ctx.arc(lx + size * 0.68, ly + size * 0.43, size * 0.07, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      };
+
       // Load user photo
       const loadImg = (src: string): Promise<HTMLImageElement> => {
         return new Promise((resolve, reject) => {
@@ -300,49 +602,56 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       const fx = margin;
       const fy = margin;
 
-      // Front Card Base
+      // Card Base with Double Border
       drawRoundRect(fx, fy, cardWidth, cardHeight, 28, '#FFFFFF', '#004D40', 4);
+      drawSecurityPattern(fx + 6, fy + 200, cardWidth - 12, cardHeight - 310);
 
-      // Header Bar - Deep Emerald & Gold
+      // Header Bar - Deep Emerald
       ctx.save();
       ctx.beginPath();
-      ctx.rect(fx, fy, cardWidth, 190);
+      ctx.rect(fx, fy, cardWidth, 205);
       ctx.fillStyle = '#004D40';
       ctx.fill();
       ctx.restore();
 
-      // Header Gold Accent Strip
-      ctx.fillStyle = '#D97706';
-      ctx.fillRect(fx, fy + 190, cardWidth, 10);
+      // Top Corner Decorative Gold Corner Brackets
+      ctx.strokeStyle = '#D97706';
+      ctx.lineWidth = 3;
 
-      // Header Text
+      // Header Story Today Logo + Typography
+      drawLogoEmblem(fx + 45, fy + 30, 68);
+
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 36px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('STORY TODAY', fx + cardWidth / 2, fy + 58);
+      ctx.textAlign = 'left';
+      ctx.fillText('STORY TODAY', fx + 130, fy + 65);
 
-      ctx.font = 'bold 16px sans-serif';
+      ctx.font = 'bold 15px sans-serif';
       ctx.fillStyle = '#A7F3D0';
-      ctx.letterSpacing = '3px';
-      ctx.fillText('PRESS & MEDIA CREDENTIAL', fx + cardWidth / 2, fy + 92);
+      ctx.fillText('PRESS & MEDIA CREDENTIAL', fx + 130, fy + 90);
 
-      ctx.font = '14px sans-serif';
+      ctx.font = '13px sans-serif';
       ctx.fillStyle = '#E0F2F1';
-      ctx.fillText('राष्ट्रीय व प्रांतीय स्वतंत्र पत्रकारिता मंच', fx + cardWidth / 2, fy + 120);
+      ctx.fillText('राष्ट्रीय एवं प्रांतीय स्वतंत्र पत्रकारिता मंच', fx + 130, fy + 112);
+
+      // Gold Accent Strip
+      ctx.fillStyle = '#D97706';
+      ctx.fillRect(fx, fy + 205, cardWidth, 8);
 
       // "NON-SALARIED POSITION" Banner in Header
-      drawRoundRect(fx + 100, fy + 140, cardWidth - 200, 36, 18, '#DC2626');
+      drawRoundRect(fx + 60, fy + 145, cardWidth - 120, 38, 19, '#DC2626', '#F87171', 1.5);
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 15px sans-serif';
-      ctx.fillText('★ THIS IS A NON-SALARIED POSITION ★', fx + cardWidth / 2, fy + 164);
+      ctx.textAlign = 'center';
+      ctx.fillText('★ THIS IS A NON-SALARIED POSITION / यह एक अवैतनिक पद है ★', fx + cardWidth / 2, fy + 170);
 
       // Photo Placement
       const photoX = fx + cardWidth / 2 - 110;
-      const photoY = fy + 230;
+      const photoY = fy + 240;
       const photoSize = 220;
 
       // Photo Outer Border & Shadow
-      drawRoundRect(photoX - 8, photoY - 8, photoSize + 16, photoSize + 16, 20, '#F3F4F6', '#D97706', 4);
+      drawRoundRect(photoX - 8, photoY - 8, photoSize + 16, photoSize + 16, 20, '#F8FAFC', '#D97706', 4);
 
       try {
         if (idCard.photoUrl) {
@@ -369,30 +678,29 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       }
 
       // Reporter Full Name
-      ctx.fillStyle = '#111827';
+      ctx.fillStyle = '#0F172A';
       ctx.font = 'bold 34px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(idCard.fullName.toUpperCase(), fx + cardWidth / 2, fy + 500);
+      ctx.fillText(idCard.fullName.toUpperCase(), fx + cardWidth / 2, fy + 510);
 
       // Designation Pill
-      drawRoundRect(fx + 140, fy + 525, cardWidth - 280, 44, 22, '#ECFDF5', '#059669', 2);
+      drawRoundRect(fx + 120, fy + 535, cardWidth - 240, 44, 22, '#ECFDF5', '#059669', 2);
       ctx.fillStyle = '#065F46';
       ctx.font = 'bold 20px sans-serif';
-      ctx.fillText(`● ${idCard.designation.toUpperCase()} ●`, fx + cardWidth / 2, fy + 554);
+      ctx.fillText(`● ${idCard.designation.toUpperCase()} ●`, fx + cardWidth / 2, fy + 564);
 
       // Details Table Container
-      const tableY = fy + 595;
-      drawRoundRect(fx + 35, tableY, cardWidth - 70, 310, 16, '#F9FAFB', '#E5E7EB', 1.5);
+      const tableY = fy + 605;
+      drawRoundRect(fx + 35, tableY, cardWidth - 70, 310, 16, '#F8FAFC', '#E2E8F0', 1.5);
 
       ctx.textAlign = 'left';
       const drawField = (label: string, value: string, curY: number) => {
-        ctx.fillStyle = '#6B7280';
+        ctx.fillStyle = '#64748B';
         ctx.font = 'bold 15px sans-serif';
         ctx.fillText(label.toUpperCase(), fx + 60, curY);
 
-        ctx.fillStyle = '#111827';
+        ctx.fillStyle = '#0F172A';
         ctx.font = 'bold 18px sans-serif';
-        // Wrap value if needed
         const maxValW = cardWidth - 260;
         if (ctx.measureText(value).width > maxValW) {
           ctx.font = 'bold 15px sans-serif';
@@ -400,7 +708,7 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
         ctx.fillText(value, fx + 230, curY);
 
         // Divider
-        ctx.strokeStyle = '#E5E7EB';
+        ctx.strokeStyle = '#E2E8F0';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(fx + 60, curY + 12);
@@ -411,9 +719,12 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       drawField('Card No:', idCard.cardNumber || 'ST-PRESS-2026-ACTIVE', tableY + 45);
       drawField('Mobile:', idCard.mobileNumber, tableY + 95);
       drawField('ID Proof:', `${idCard.idProofType.toUpperCase()}: ${idCard.idProofNumber}`, tableY + 145);
-      drawField('Address:', idCard.address.length > 35 ? idCard.address.slice(0, 35) + '...' : idCard.address, tableY + 195);
+      drawField('Address:', idCard.address.length > 36 ? idCard.address.slice(0, 36) + '...' : idCard.address, tableY + 195);
       drawField('Issued On:', idCard.approvedAt ? new Date(idCard.approvedAt).toLocaleDateString('en-IN') : '2026', tableY + 245);
       drawField('Valid Till:', idCard.validUntil ? new Date(idCard.validUntil).toLocaleDateString('en-IN') : '2028', tableY + 290);
+
+      // Official Stamp on Front Card (Bottom Right corner)
+      drawOfficialSeal(fx + cardWidth - 110, tableY + 225, 52);
 
       // Card Footer with Security Strip & Signatures
       const footerY = fy + cardHeight - 110;
@@ -429,15 +740,15 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       ctx.fillText('VERIFIED PRESS HOLDER', fx + 40, footerY + 45);
       ctx.font = '12px sans-serif';
       ctx.fillStyle = '#A7F3D0';
-      ctx.fillText('Government & Civil Dispatch Observer', fx + 40, footerY + 70);
+      ctx.fillText('Democratic Citizen Journalism Bureau', fx + 40, footerY + 70);
 
       ctx.textAlign = 'right';
       ctx.fillStyle = '#FDE68A';
-      ctx.font = 'italic bold 18px cursive, serif';
+      ctx.font = 'italic bold 19px cursive, serif';
       ctx.fillText('Chief Editor', fx + cardWidth - 40, footerY + 48);
       ctx.font = '11px sans-serif';
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText('Authorized Signatory & Seal', fx + cardWidth - 40, footerY + 72);
+      ctx.fillText('Authorized Signatory & Editorial Desk', fx + cardWidth - 40, footerY + 72);
 
       // -------------------------------------------------------------
       // 2. DRAW BACK CARD (x: fx + cardWidth + margin, y: margin)
@@ -447,33 +758,38 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
 
       // Back Card Base
       drawRoundRect(bx, by, cardWidth, cardHeight, 28, '#FFFFFF', '#004D40', 4);
+      drawSecurityPattern(bx + 6, by + 140, cardWidth - 12, cardHeight - 250);
 
-      // Top Banner
-      drawRoundRect(bx, by, cardWidth, 110, 28, '#004D40');
+      // Top Banner with Logo
+      drawRoundRect(bx, by, cardWidth, 125, 28, '#004D40');
       ctx.fillStyle = '#004D40';
-      ctx.fillRect(bx, by + 50, cardWidth, 60);
+      ctx.fillRect(bx, by + 50, cardWidth, 75);
 
       ctx.fillStyle = '#D97706';
-      ctx.fillRect(bx, by + 110, cardWidth, 6);
+      ctx.fillRect(bx, by + 125, cardWidth, 6);
+
+      drawLogoEmblem(bx + 35, by + 28, 64);
 
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 24px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('STORY TODAY — PRESS RECOGNITION', bx + cardWidth / 2, by + 65);
+      ctx.textAlign = 'left';
+      ctx.fillText('STORY TODAY — PRESS RECOGNITION', bx + 115, by + 65);
+      ctx.font = '13px sans-serif';
+      ctx.fillStyle = '#A7F3D0';
+      ctx.fillText('Editorial Guidelines & Legal Declarations', bx + 115, by + 92);
 
       // Crucial Disclaimer Box (Required by guidelines)
-      const discY = by + 145;
-      drawRoundRect(bx + 35, discY, cardWidth - 70, 220, 16, '#FEF2F2', '#DC2626', 2.5);
+      const discY = by + 155;
+      drawRoundRect(bx + 35, discY, cardWidth - 70, 230, 16, '#FEF2F2', '#DC2626', 2.5);
 
       ctx.fillStyle = '#991B1B';
-      ctx.font = 'bold 20px sans-serif';
+      ctx.font = 'bold 18px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('⚠️ MANDATORY LEGAL DISCLAIMER & TERMS', bx + cardWidth / 2, discY + 40);
+      ctx.fillText('⚠️ MANDATORY LEGAL DISCLAIMER & TERMS', bx + cardWidth / 2, discY + 38);
 
       ctx.fillStyle = '#7F1D1D';
       ctx.font = 'bold 15px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('THIS IS A NON-SALARIED POSITION / यह एक अवैतनिक पद है', bx + cardWidth / 2, discY + 75);
+      ctx.fillText('THIS IS A NON-SALARIED POSITION / यह एक अवैतनिक पद है', bx + cardWidth / 2, discY + 70);
 
       ctx.font = '14px sans-serif';
       ctx.fillStyle = '#374151';
@@ -482,26 +798,26 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       // English disclaimer
       const discEng =
         '"The holder is fully responsible for any misuse of this Identity Card. Story Today is not responsible for any misuse."';
-      ctx.font = 'italic bold 14px sans-serif';
+      ctx.font = 'italic bold 13.5px sans-serif';
       ctx.fillStyle = '#991B1B';
-      ctx.fillText(discEng, bx + 55, discY + 115);
+      ctx.fillText(discEng, bx + 55, discY + 110);
 
       // Hindi disclaimer
       const discHi =
         'इस पहचान पत्र के किसी भी प्रकार के दुरुपयोग के लिए धारक स्वयं पूर्ण रूप से उत्तरदायी होगा। स्टोरी टुडे इसके लिए जिम्मेदार नहीं है।';
       ctx.font = '13px sans-serif';
       ctx.fillStyle = '#4B5563';
-      ctx.fillText(discHi, bx + 55, discY + 155);
+      ctx.fillText(discHi, bx + 55, discY + 150);
 
       ctx.font = '12px sans-serif';
       ctx.fillStyle = '#6B7280';
-      ctx.fillText('Holders must uphold the highest standards of journalistic ethics and civic truth.', bx + 55, discY + 190);
+      ctx.fillText('Holders must uphold the highest standards of journalistic integrity and truth.', bx + 55, discY + 190);
 
       // Guidelines & Rules Container
-      const rulesY = by + 395;
-      drawRoundRect(bx + 35, rulesY, cardWidth - 70, 390, 16, '#F9FAFB', '#E5E7EB', 1.5);
+      const rulesY = by + 410;
+      drawRoundRect(bx + 35, rulesY, cardWidth - 70, 380, 16, '#F8FAFC', '#E2E8F0', 1.5);
 
-      ctx.fillStyle = '#111827';
+      ctx.fillStyle = '#0F172A';
       ctx.font = 'bold 18px sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText('TERMS OF PRESS ISSUANCE / दिशा-निर्देश', bx + 60, rulesY + 45);
@@ -515,31 +831,26 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       ];
 
       ctx.font = '13px sans-serif';
-      ctx.fillStyle = '#374151';
+      ctx.fillStyle = '#334155';
       rules.forEach((rule, idx) => {
-        ctx.fillText(rule, bx + 60, rulesY + 90 + idx * 36);
+        ctx.fillText(rule, bx + 60, rulesY + 88 + idx * 36);
       });
 
-      // Verification Barcode / Security Seal simulation
-      const qrY = rulesY + 285;
-      drawRoundRect(bx + 60, qrY, 180, 80, 8, '#FFFFFF', '#004D40', 1.5);
+      // Verification Barcode / QR Simulation & Official Stamp
+      const qrY = rulesY + 275;
+      drawRoundRect(bx + 60, qrY, 200, 85, 10, '#FFFFFF', '#004D40', 1.5);
       ctx.fillStyle = '#004D40';
-      ctx.font = 'bold 12px monospace';
+      ctx.font = 'bold 13px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('VERIFY DIGITAL ID', bx + 150, qrY + 30);
-      ctx.font = '10px monospace';
-      ctx.fillText(idCard.cardNumber || 'ST-PRESS-2026', bx + 150, qrY + 52);
+      ctx.fillText('DIGITAL PRESS ID', bx + 160, qrY + 32);
+      ctx.font = '11px monospace';
+      ctx.fillText(idCard.cardNumber || 'ST-PRESS-2026', bx + 160, qrY + 54);
+      ctx.font = '9px sans-serif';
+      ctx.fillStyle = '#64748B';
+      ctx.fillText('Scan to Verify Credential', bx + 160, qrY + 72);
 
-      // Official Stamp Circle
-      ctx.strokeStyle = '#059669';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(bx + cardWidth - 140, qrY + 40, 38, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = '#059669';
-      ctx.font = 'bold 10px sans-serif';
-      ctx.fillText('STORY TODAY', bx + cardWidth - 140, qrY + 34);
-      ctx.fillText('EDITORIAL SEAL', bx + cardWidth - 140, qrY + 48);
+      // Official Stamp on Back Card
+      drawOfficialSeal(bx + cardWidth - 140, qrY + 42, 54);
 
       // Back Footer
       const bFooterY = by + cardHeight - 120;
@@ -552,18 +863,60 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       ctx.fillStyle = '#A7F3D0';
       ctx.fillText('Citizen Journalism & Democratic Civic Accountability Platform', bx + cardWidth / 2, bFooterY + 60);
 
-      // Convert Canvas to PNG and Download
-      const dataUrl = canvas.toDataURL('image/png', 1.0);
-      const link = document.createElement('a');
-      link.href = dataUrl;
+      // -------------------------------------------------------------
+      // 3. GENERATE HIGH-QUALITY PDF (A4 Landscape Print Format)
+      // -------------------------------------------------------------
+      const imgData = canvas.toDataURL('image/jpeg', 0.96);
+
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      // A4 Landscape: 297mm x 210mm
+      const pageWidth = 297;
+      const pageHeight = 210;
+
+      // Header banner in PDF document
+      pdf.setFillColor(0, 77, 64);
+      pdf.rect(0, 0, pageWidth, 16, 'F');
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('STORY TODAY — OFFICIAL ACCREDITED PRESS IDENTITY CARD', 14, 11);
+
+      pdf.setFontSize(8);
+      pdf.setTextColor(167, 243, 208);
+      pdf.text('Official Printable Press Credential (Front & Back) • High-Resolution Print Ready', pageWidth - 14, 11, {
+        align: 'right',
+      });
+
+      // Embed the dual-card graphic
+      // Aspect ratio of canvas: (canvas.width / canvas.height)
+      const targetW = 270;
+      const targetH = (canvas.height * targetW) / canvas.width;
+      const posX = (pageWidth - targetW) / 2;
+      const posY = 22;
+
+      pdf.addImage(imgData, 'JPEG', posX, posY, targetW, targetH);
+
+      // Printable Cut & Laminate Guide Footer
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text(
+        'Instructions: Print on 300 GSM photo-paper/cardstock, cut along card borders, fold or laminate for official media badge.',
+        pageWidth / 2,
+        pageHeight - 8,
+        { align: 'center' }
+      );
+
       const cleanName = idCard.fullName.replace(/[^a-zA-Z0-9]/g, '_');
-      link.download = `StoryToday_Press_ID_Card_${cleanName}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      pdf.save(`StoryToday_Press_ID_Card_${cleanName}.pdf`);
     } catch (err) {
-      console.error('Error rendering ID card canvas:', err);
-      alert('Error generating high-resolution card. Please try again.');
+      console.error('Error rendering ID card PDF:', err);
+      alert('Error generating PDF card. Please try again.');
     } finally {
       setIsDownloading(false);
     }
@@ -590,9 +943,7 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
         {/* Modal Top Bar */}
         <div className="bg-[#004D40] text-white px-5 py-4 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-amber-400">
-              <BadgeCheck className="w-6 h-6" />
-            </div>
+            <StoryTodayLogo size="sm" />
             <div>
               <h2 className="text-base sm:text-lg font-bold font-serif flex items-center gap-2">
                 <span>{lang === 'hi' ? 'पत्रकार पहचान पत्र (Press ID Card)' : 'Reporter Press Identity Card'}</span>
@@ -609,7 +960,7 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
               </h2>
               <p className="text-xs text-[#A7F3D0] mt-0.5">
                 {lang === 'hi'
-                  ? 'स्टोरी टुडे का आधिकारिक पत्रकार परिचय पत्र'
+                  ? 'स्टोरी टुडे का आधिकारिक डिजिटल पत्रकार परिचय पत्र'
                   : 'Official Press & Media Credential for Story Today Journalists'}
               </p>
             </div>
@@ -914,8 +1265,8 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
                       </h4>
                       <p className="text-xs text-amber-800 mt-0.5">
                         {lang === 'hi'
-                          ? 'आपका आवेदन मुख्य संपादक / व्यवस्थापक (Admin) के पास समीक्षा हेतु जमा है। स्वीकृति मिलते ही डाउनलोड विकल्प उपलब्ध हो जाएगा।'
-                          : 'Your application has been submitted to the Editorial Admin. Once approved, you can download your official ID Card.'}
+                          ? 'आपका आवेदन मुख्य संपादक / व्यवस्थापक (Admin) के पास समीक्षा हेतु जमा है। स्वीकृति मिलते ही PDF डाउनलोड विकल्प उपलब्ध हो जाएगा।'
+                          : 'Your application has been submitted to the Editorial Admin. Once approved, you can download your official PDF ID Card.'}
                       </p>
                     </div>
                   </div>
@@ -999,30 +1350,30 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
                       </button>
 
                       <button
-                        id="btn-download-id-card-png"
+                        id="btn-download-id-card-pdf"
                         onClick={handleDownloadCard}
                         disabled={isDownloading}
-                        className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-4 py-1.5 bg-[#004D40] hover:bg-[#00382E] text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer disabled:opacity-50 border border-emerald-600/40"
                       >
                         {isDownloading ? (
                           <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         ) : (
-                          <Download className="w-3.5 h-3.5" />
+                          <Download className="w-3.5 h-3.5 text-amber-400" />
                         )}
-                        <span>{lang === 'hi' ? 'पहचान पत्र डाउनलोड करें' : 'Download ID Card (PNG)'}</span>
+                        <span>{lang === 'hi' ? 'पहचान पत्र डाउनलोड करें (PDF)' : 'Download ID Card (PDF)'}</span>
                       </button>
                     </>
                   ) : (
                     <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
                       <Clock className="w-3.5 h-3.5" />
-                      <span>{lang === 'hi' ? 'एडमिन स्वीकृति के बाद डाउनलोड करें' : 'Download enabled after Admin Approval'}</span>
+                      <span>{lang === 'hi' ? 'एडमिन स्वीकृति के बाद PDF डाउनलोड करें' : 'PDF Download enabled after Admin Approval'}</span>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* =========================================================================
-               * THE IDENTITY CARD RENDERER (Clean, Authentic Press Card)
+               * THE IDENTITY CARD RENDERER (Clean, Authentic Press Card with Official Logo & Seal)
                * ========================================================================= */}
               <div className="flex justify-center py-2">
                 {activeSide === 'front' ? (
@@ -1030,34 +1381,47 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
                   <div
                     ref={cardFrontRef}
                     id="id-card-front-preview"
-                    className="w-full max-w-[380px] bg-white rounded-2xl border-2 border-[#004D40] shadow-xl overflow-hidden text-[#111827] flex flex-col relative animate-in fade-in duration-200"
+                    className="w-full max-w-[390px] bg-white rounded-2xl border-2 border-[#004D40] shadow-2xl overflow-hidden text-[#111827] flex flex-col relative animate-in fade-in duration-200"
                   >
-                    {/* Top Header */}
-                    <div className="bg-[#004D40] text-white p-3.5 text-center relative overflow-hidden">
+                    {/* Top Header with Story Today Official Logo */}
+                    <div className="bg-gradient-to-r from-[#004D40] via-[#00382E] to-[#004D40] text-white p-3.5 text-center relative overflow-hidden">
                       <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-8 -mt-8 pointer-events-none" />
-                      <div className="flex items-center justify-center gap-2">
-                        <span className="font-serif font-bold text-xl tracking-tight text-white">
-                          STORY TODAY
-                        </span>
+                      
+                      {/* Logo + Masthead Header */}
+                      <div className="flex items-center justify-center gap-2.5">
+                        <StoryTodayLogo size="sm" />
+                        <div className="text-left">
+                          <div className="font-serif font-black text-lg tracking-tight text-white leading-none">
+                            STORY TODAY
+                          </div>
+                          <p className="text-[9px] font-extrabold tracking-[0.2em] text-[#A7F3D0] uppercase mt-1">
+                            PRESS & MEDIA CREDENTIAL
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-[10px] font-bold tracking-[0.25em] text-[#A7F3D0] uppercase mt-0.5">
-                        PRESS & MEDIA CREDENTIAL
-                      </p>
-                      <p className="text-[9px] text-[#E0F2F1] mt-0.5">
+
+                      <p className="text-[9px] text-[#E0F2F1] mt-1.5">
                         राष्ट्रीय एवं प्रांतीय स्वतंत्र पत्रकारिता मंच
                       </p>
 
                       {/* Prominent Non-Salaried Pill */}
-                      <div className="mt-2 inline-block bg-red-600 text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-red-400 shadow-xs">
+                      <div className="mt-2 inline-block bg-red-600 text-white text-[9px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full border border-red-400 shadow-xs">
                         ★ THIS IS A NON-SALARIED POSITION ★
                       </div>
                     </div>
 
-                    {/* Gold Accent Separator */}
-                    <div className="h-1 bg-amber-500 w-full" />
+                    {/* Gold Accent Separator Strip */}
+                    <div className="h-1.5 bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600 w-full" />
 
                     {/* Photo & Name Section */}
-                    <div className="p-4 flex flex-col items-center text-center bg-gradient-to-b from-gray-50/80 to-white">
+                    <div className="p-4 flex flex-col items-center text-center bg-gradient-to-b from-gray-50/90 via-white to-white relative">
+                      {/* Subtle Watermark in background */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-4 pointer-events-none">
+                        <span className="font-serif font-black text-5xl tracking-widest text-[#004D40] rotate-[-25deg]">
+                          STORY TODAY
+                        </span>
+                      </div>
+
                       <div className="relative">
                         <div className="w-24 h-24 rounded-2xl overflow-hidden bg-white border-2 border-amber-500 shadow-md flex items-center justify-center p-0.5">
                           {photoUrl ? (
@@ -1082,15 +1446,15 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
                         {fullName || currentUser.name}
                       </h3>
 
-                      <span className="mt-1 inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                      <span className="mt-1 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
                         <span>{designation || 'News Reporter'}</span>
                       </span>
                     </div>
 
-                    {/* Details Table */}
-                    <div className="px-4 pb-3 space-y-1.5 text-xs">
-                      <div className="bg-gray-50 p-3 rounded-xl border border-gray-200/80 space-y-1.5 text-[11px]">
+                    {/* Details Table & Official Seal */}
+                    <div className="px-4 pb-3 space-y-1.5 text-xs relative">
+                      <div className="bg-gray-50 p-3 rounded-xl border border-gray-200/80 space-y-1.5 text-[11px] relative overflow-hidden">
                         <div className="flex items-center justify-between border-b border-gray-200/60 pb-1">
                           <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px]">
                             Card ID:
@@ -1122,7 +1486,7 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
                           <span className="text-gray-500 font-semibold uppercase tracking-wider text-[10px] shrink-0">
                             Address:
                           </span>
-                          <span className="font-medium text-gray-800 text-right line-clamp-2 max-w-[190px]">
+                          <span className="font-medium text-gray-800 text-right line-clamp-2 max-w-[200px]">
                             {address || '—'}
                           </span>
                         </div>
@@ -1142,6 +1506,19 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
                           </span>
                         </div>
                       </div>
+
+                      {/* Official Story Today Seal Stamp Overlay */}
+                      <div className="flex justify-end pt-1 pr-1">
+                        <div className="flex items-center gap-2">
+                          <div className="text-right">
+                            <span className="text-[9px] font-bold text-emerald-800 uppercase block leading-tight">
+                              STORY TODAY
+                            </span>
+                            <span className="text-[8px] text-gray-500 block">Editorial Bureau</span>
+                          </div>
+                          <StoryTodaySeal size={48} variant="emerald" />
+                        </div>
+                      </div>
                     </div>
 
                     {/* Bottom Security Footer */}
@@ -1153,7 +1530,7 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
 
                       <div className="text-right">
                         <p className="font-serif italic font-bold text-amber-300 text-xs">Chief Editor</p>
-                        <p className="text-[9px] text-gray-300">Authorized Seal</p>
+                        <p className="text-[9px] text-gray-300">Authorized Signatory</p>
                       </div>
                     </div>
                   </div>
@@ -1162,14 +1539,19 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
                   <div
                     ref={cardBackRef}
                     id="id-card-back-preview"
-                    className="w-full max-w-[380px] bg-white rounded-2xl border-2 border-[#004D40] shadow-xl overflow-hidden text-[#111827] flex flex-col relative animate-in fade-in duration-200"
+                    className="w-full max-w-[390px] bg-white rounded-2xl border-2 border-[#004D40] shadow-2xl overflow-hidden text-[#111827] flex flex-col relative animate-in fade-in duration-200"
                   >
-                    {/* Top Header */}
+                    {/* Top Header with Logo */}
                     <div className="bg-[#004D40] text-white p-3 text-center">
-                      <h4 className="font-serif font-bold text-sm tracking-wide text-white">
-                        STORY TODAY — PRESS RECOGNITION
-                      </h4>
-                      <p className="text-[10px] text-emerald-200">Editorial Guidelines & Legal Rules</p>
+                      <div className="flex items-center justify-center gap-2">
+                        <StoryTodayLogo size="sm" />
+                        <div className="text-left">
+                          <h4 className="font-serif font-bold text-sm tracking-wide text-white leading-tight">
+                            STORY TODAY — PRESS RECOGNITION
+                          </h4>
+                          <p className="text-[9px] text-emerald-200">Editorial Guidelines & Legal Rules</p>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="h-1 bg-amber-500 w-full" />
@@ -1205,26 +1587,24 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
                         <p>3. If found, please return to Story Today Editorial Bureau.</p>
                       </div>
 
-                      {/* QR & Seal Verification Strip */}
-                      <div className="flex items-center justify-between p-2 bg-gray-100 rounded-lg border border-gray-200 text-[10px]">
+                      {/* QR & Official Stamp Verification Strip */}
+                      <div className="flex items-center justify-between p-2.5 bg-gray-100 rounded-xl border border-gray-200 text-[10px]">
                         <div className="flex items-center gap-2">
-                          <QrCode className="w-7 h-7 text-[#004D40]" />
+                          <QrCode className="w-8 h-8 text-[#004D40]" />
                           <div>
                             <p className="font-mono font-bold text-[#004D40]">{idCard?.cardNumber || 'ST-PRESS-2026'}</p>
-                            <p className="text-[9px] text-gray-500">Scan to Verify Credential</p>
+                            <p className="text-[9px] text-gray-500">Scan to Verify Digital Credential</p>
                           </div>
                         </div>
 
-                        <div className="w-10 h-10 rounded-full border-2 border-emerald-700 flex items-center justify-center text-center p-0.5">
-                          <span className="text-[7px] font-bold text-emerald-800 leading-tight">STORY TODAY SEAL</span>
-                        </div>
+                        <StoryTodaySeal size={52} variant="emerald" />
                       </div>
                     </div>
 
                     {/* Bottom Footer */}
                     <div className="mt-auto bg-[#004D40] text-white p-2.5 text-center text-[10px]">
                       <p className="font-bold text-white">Story Today — Central Editorial Desk</p>
-                      <p className="text-[9px] text-emerald-200">Independent Journalism & Civic Dispatch</p>
+                      <p className="text-[9px] text-emerald-200">Citizen Journalism & Democratic Civic Accountability Platform</p>
                     </div>
                   </div>
                 )}

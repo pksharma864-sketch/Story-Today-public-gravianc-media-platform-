@@ -418,9 +418,9 @@ export async function applyForIdCard(payload: {
     });
     const data = await res.json();
     return data;
-  } catch (err) {
+  } catch (err: any) {
     console.error('API applyForIdCard error:', err);
-    return { success: false, error: 'Network error while submitting ID card application' };
+    return { success: false, error: err?.message || 'Network error while submitting ID card application' };
   }
 }
 
