@@ -54,7 +54,7 @@ export const StoryTodayLogo: React.FC<LogoProps> = ({
   const sizeMap = {
     sm: 'h-7 sm:h-8 w-auto',
     md: 'h-10 sm:h-12 w-auto',
-    header: 'h-10 sm:h-12 md:h-14 w-auto min-w-[140px] sm:min-w-[170px] md:min-w-[210px]',
+    header: 'h-9 sm:h-12 md:h-14 w-auto max-w-[120px] xs:max-w-[140px] sm:max-w-none',
     lg: 'h-14 sm:h-16 w-auto',
     xl: 'h-18 sm:h-22 w-auto',
     '2xl': 'h-24 sm:h-28 w-auto',

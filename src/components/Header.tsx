@@ -115,9 +115,9 @@ export const Header: React.FC<Props> = ({
   return (
     <header id="main-header" className="sticky top-0 z-40 bg-white/98 backdrop-blur-md border-b border-[#E0E0E0] shadow-xs w-full">
       {/* Top Bar with Prominent Branding & Tools */}
-      <div className="max-w-5xl mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-1.5 sm:gap-3">
+      <div className="max-w-5xl mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-1 sm:gap-2 md:gap-3 w-full">
         {/* Left: Prominent Brand / Logo */}
-        <div className="flex items-center shrink-0">
+        <div className="flex items-center shrink-0 min-w-0">
           <button
             type="button"
             className="cursor-pointer group flex items-center bg-transparent border-0 p-0 focus:outline-none shrink-0"
@@ -196,7 +196,7 @@ export const Header: React.FC<Props> = ({
                 id="btn-user-profile-menu"
                 type="button"
                 onClick={() => setShowProfileMenu((prev) => !prev)}
-                className="flex items-center gap-1 sm:gap-1.5 bg-gray-100 hover:bg-gray-200/80 active:bg-gray-300 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg border border-[#E0E0E0] text-[11px] sm:text-xs transition-colors cursor-pointer shrink-0 max-w-[120px] sm:max-w-[170px]"
+                className="flex items-center gap-1 sm:gap-1.5 bg-gray-100 hover:bg-gray-200/80 active:bg-gray-300 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg border border-[#E0E0E0] text-[10px] sm:text-xs transition-colors cursor-pointer shrink-0 max-w-[100px] sm:max-w-[170px]"
                 title="View User Profile"
               >
                 <div className="w-5 h-5 rounded-full overflow-hidden bg-[#004D40] text-white flex items-center justify-center text-[10px] font-bold shrink-0 border border-gray-300">
@@ -371,7 +371,7 @@ export const Header: React.FC<Props> = ({
               <button
                 id="btn-header-login"
                 onClick={() => onOpenLoginModal('login')}
-                className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-gray-700 bg-white hover:bg-gray-100 border border-[#E0E0E0] transition-colors shadow-xs shrink-0"
+                className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold text-gray-700 bg-white hover:bg-gray-100 border border-[#E0E0E0] transition-colors shadow-xs shrink-0"
                 title="Login to your account"
               >
                 <LogIn className="w-3.5 h-3.5 text-[#004D40] shrink-0" />
@@ -382,7 +382,7 @@ export const Header: React.FC<Props> = ({
               <button
                 id="btn-header-register"
                 onClick={() => onOpenLoginModal('register')}
-                className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-[#004D40] bg-[#E0F2F1] hover:bg-[#B2DFDB] border border-[#B2DFDB] transition-colors shadow-xs shrink-0"
+                className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold text-[#004D40] bg-[#E0F2F1] hover:bg-[#B2DFDB] border border-[#B2DFDB] transition-colors shadow-xs shrink-0"
                 title="Create Citizen or Reporter Account"
               >
                 <UserPlus className="w-3.5 h-3.5 shrink-0" />
@@ -400,7 +400,7 @@ export const Header: React.FC<Props> = ({
           <button
             id="btn-admin-toggle"
             onClick={onAdminToggle}
-            className={`relative flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all border shrink-0 ${
+            className={`relative flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all border shrink-0 ${
               isAdmin
                 ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs'
                 : 'bg-white hover:bg-gray-100 text-gray-700 border-[#E0E0E0]'
@@ -422,7 +422,7 @@ export const Header: React.FC<Props> = ({
           <button
             id="btn-header-post"
             onClick={() => onOpenCreateModal()}
-            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-[#004D40] hover:bg-[#00382E] text-white rounded-lg text-[11px] sm:text-xs font-bold uppercase tracking-wider shadow-xs transition-colors shrink-0 whitespace-nowrap"
+            className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 py-1 sm:py-1.5 bg-[#004D40] hover:bg-[#00382E] text-white rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider shadow-xs transition-colors shrink-0 whitespace-nowrap"
             title={lang === 'hi' ? 'नया पोस्ट या समाचार जोड़ें' : 'Create New Story or News'}
           >
             <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#E0F2F1] shrink-0" />
