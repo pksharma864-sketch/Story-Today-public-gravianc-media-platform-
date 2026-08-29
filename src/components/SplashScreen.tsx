@@ -39,7 +39,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
       <div className="relative z-10 flex flex-col items-center max-w-xl px-6 text-center animate-in fade-in zoom-in-95 duration-500">
         {/* Emblem Logo */}
-        <div className="mb-6 p-6 rounded-3xl bg-white shadow-xl border border-[#E0E0E0] ring-1 ring-black/5">
+        <div className="mb-6 flex items-center justify-center bg-transparent">
           <StoryTodayLogo
             variant="icon-only"
             size="splash"

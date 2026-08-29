@@ -7,18 +7,14 @@ interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'header' | 'splash';
   showDomain?: boolean;
   className?: string;
-  theme?: 'light' | 'dark' | 'emerald';
+  theme?: 'light' | 'dark' | 'emerald' | 'adaptive';
   lang?: 'en' | 'hi';
   customSrc?: string;
 }
 
 export const StoryTodayLogo: React.FC<LogoProps> = ({
-  variant = 'icon-only',
   size = 'header',
-  showDomain = false,
   className = '',
-  theme = 'emerald',
-  lang = 'en',
   customSrc,
 }) => {
   const getInitialLogo = () => {
@@ -33,6 +29,7 @@ export const StoryTodayLogo: React.FC<LogoProps> = ({
   const [imageSrc, setImageSrc] = useState<string>(getInitialLogo);
   const [imageError, setImageError] = useState<boolean>(false);
 
+  // Sync with localStorage changes or props
   useEffect(() => {
     const updateLogo = () => {
       const storedLogo = localStorage.getItem('story_today_custom_logo');
@@ -53,87 +50,77 @@ export const StoryTodayLogo: React.FC<LogoProps> = ({
     return () => window.removeEventListener('storage', updateLogo);
   }, [customSrc]);
 
-  // Dimension mappings for the icon emblem
-  const iconSizeMap = {
-    sm: 'w-8 h-8 sm:w-10 sm:h-10 min-w-[32px] sm:min-w-[40px]',
-    md: 'w-12 h-12 sm:w-16 sm:h-16 min-w-[48px] sm:min-w-[64px]',
-    header: 'w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 min-w-[56px] sm:min-w-[64px] md:min-w-[80px]',
-    lg: 'w-20 h-20 sm:w-24 sm:h-24 min-w-[80px] sm:min-w-[96px]',
-    xl: 'w-28 h-28 sm:w-36 sm:h-36 min-w-[112px] sm:min-w-[144px]',
-    '2xl': 'w-36 h-36 sm:w-44 sm:h-44 min-w-[144px] sm:min-w-[176px]',
-    splash: 'w-32 h-32 sm:w-40 sm:h-40 min-w-[128px] sm:min-w-[160px]',
+  // Dimension mappings for the logo - large, prominent, completely transparent
+  const sizeMap = {
+    sm: 'h-7 sm:h-8 w-auto',
+    md: 'h-10 sm:h-12 w-auto',
+    header: 'h-10 sm:h-12 md:h-14 w-auto min-w-[140px] sm:min-w-[170px] md:min-w-[210px]',
+    lg: 'h-14 sm:h-16 w-auto',
+    xl: 'h-18 sm:h-22 w-auto',
+    '2xl': 'h-24 sm:h-28 w-auto',
+    splash: 'h-16 sm:h-20 w-auto',
   };
 
   return (
     <div
-      className={`inline-flex items-center justify-center select-none ${className}`}
+      className={`inline-flex items-center justify-center select-none bg-transparent p-0 m-0 border-0 ${className}`}
       id="story-today-official-logo"
     >
-      {/* Official story-today.in Logo Emblem (Permanent Default Logo or Custom Uploaded Branding) */}
+      {/* 100% Fully Transparent - NO background box, NO container, NO shape behind it */}
       <div
-        className={`relative flex-shrink-0 ${iconSizeMap[size] || iconSizeMap.header} transition-transform duration-300 group-hover:scale-105 flex items-center justify-center`}
+        className={`relative flex-shrink-0 ${sizeMap[size] || sizeMap.header} transition-transform duration-300 group-hover:scale-105 flex items-center justify-start bg-transparent`}
       >
         {!imageError ? (
           <img
             src={imageSrc}
             alt="Story Today Official Logo"
-            className="w-full h-full object-contain rounded-2xl shadow-xl filter drop-shadow-md"
+            className="h-full w-auto object-contain bg-transparent filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.15)]"
             onError={() => setImageError(true)}
           />
         ) : (
           <svg
-            viewBox="0 0 512 512"
+            viewBox="0 0 560 140"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full filter drop-shadow-lg"
+            className="h-full w-auto bg-transparent filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.15)]"
             shapeRendering="geometricPrecision"
           >
             <defs>
-              <linearGradient id="fallbackBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#004D40" />
+              <linearGradient id="fbRedRuby" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#F43F5E" />
+                <stop offset="50%" stopColor="#E11D48" />
+                <stop offset="100%" stopColor="#BE123C" />
+              </linearGradient>
+              <linearGradient id="fbTealEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#00695C" />
+                <stop offset="50%" stopColor="#004D40" />
                 <stop offset="100%" stopColor="#002D25" />
               </linearGradient>
-              <linearGradient id="fallbackAccentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#E11D48" />
-                <stop offset="100%" stopColor="#BE123C" />
+              <linearGradient id="fbGoldSun" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FBBF24" />
+                <stop offset="100%" stopColor="#D97706" />
               </linearGradient>
             </defs>
 
-            {/* App Icon Background Shield */}
-            <rect width="512" height="512" rx="120" fill="url(#fallbackBgGrad)" />
-            <rect x="12" y="12" width="488" height="488" rx="108" stroke="#80CBC4" strokeWidth="8" strokeOpacity="0.4" fill="none" />
+            {/* Left Iconic News Emblem Graphic */}
+            <g transform="translate(10, 10)">
+              <path d="M 20 20 L 70 20 L 50 65 L 20 65 Z" fill="url(#fbTealEmerald)" />
+              <path d="M 74 20 L 104 20 L 84 65 L 54 65 Z" fill="url(#fbRedRuby)" />
+              <path d="M 54 69 L 104 69 L 84 114 L 34 114 Z" fill="url(#fbRedRuby)" />
+              <path d="M 14 69 L 50 69 L 30 114 L 14 114 Z" fill="url(#fbGoldSun)" />
+              <circle cx="94" cy="24" r="8" fill="#EF4444" stroke="#FFFFFF" strokeWidth="2" />
+            </g>
 
-            {/* Newspaper Sheet Back Shadow */}
-            <rect x="90" y="80" width="332" height="352" rx="36" fill="#001F19" />
-
-            {/* Crisp Newspaper Front */}
-            <rect x="106" y="92" width="300" height="328" rx="30" fill="#FFFFFF" />
-
-            {/* Bold Masthead Bar (Red Breaking Header) */}
-            <rect x="138" y="124" width="236" height="56" rx="14" fill="url(#fallbackAccentGrad)" />
-            <text x="256" y="162" fontFamily="'Plus Jakarta Sans', Arial, sans-serif" fontSize="28" fontWeight="900" fill="#FFFFFF" textAnchor="middle" letterSpacing="2">STORY TODAY</text>
-
-            {/* Editorial Headline Bar */}
-            <rect x="138" y="208" width="144" height="28" rx="8" fill="#004D40" />
-            <circle cx="346" cy="222" r="14" fill="#10B981" />
-
-            {/* News Content Article Lines */}
-            <rect x="138" y="258" width="236" height="18" rx="6" fill="#1E293B" />
-            <rect x="138" y="292" width="236" height="18" rx="6" fill="#475569" />
-            <rect x="138" y="326" width="170" height="18" rx="6" fill="#64748B" />
-            <rect x="138" y="360" width="120" height="16" rx="6" fill="#94A3B8" />
-
-            {/* Verified Stamp / Badge */}
-            <circle cx="342" cy="352" r="32" fill="#004D40" />
-            <path d="M330 352 L338 360 L356 342" stroke="#FFFFFF" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            {/* Typography: STORY TODAY */}
+            <g transform="translate(130, 0)">
+              <text x="0" y="78" fontFamily="system-ui, -apple-system, sans-serif" fontSize="64" fontWeight="900" fill="url(#fbTealEmerald)" letterSpacing="-1">STORY</text>
+              <text x="235" y="78" fontFamily="system-ui, -apple-system, sans-serif" fontSize="64" fontWeight="900" fill="url(#fbRedRuby)" letterSpacing="-1">TODAY</text>
+              <text x="2" y="112" fontFamily="system-ui, -apple-system, sans-serif" fontSize="16" fontWeight="800" fill="#004D40" letterSpacing="7">NEWS NETWORK</text>
+              <circle cx="282" cy="107" r="4" fill="#EF4444" />
+              <text x="292" y="112" fontFamily="system-ui, -apple-system, sans-serif" fontSize="13" fontWeight="800" fill="#E11D48" letterSpacing="2">LIVE</text>
+            </g>
           </svg>
         )}
-
-        {/* Live Broadcast Pulse dot */}
-        <span className="absolute -top-1 -right-1 flex h-4 w-4 pointer-events-none">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-80"></span>
-          <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-600 border-2 border-white shadow-md"></span>
-        </span>
       </div>
     </div>
   );
