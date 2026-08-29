@@ -426,8 +426,8 @@ export const Header: React.FC<Props> = ({
             title={lang === 'hi' ? 'नया पोस्ट या समाचार जोड़ें' : 'Create New Story or News'}
           >
             <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#E0F2F1] shrink-0" />
-            <span className="hidden sm:inline">{lang === 'hi' ? '+ नया पोस्ट' : '+ New Post'}</span>
-            <span className="sm:hidden">{lang === 'hi' ? '+ पोस्ट' : '+ Post'}</span>
+            <span className="hidden sm:inline">{lang === 'hi' ? 'नया पोस्ट' : 'New Post'}</span>
+            <span className="sm:hidden">{lang === 'hi' ? 'पोस्ट' : 'Post'}</span>
           </button>
         </div>
       </div>
