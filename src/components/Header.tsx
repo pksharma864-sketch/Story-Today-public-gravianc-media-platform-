@@ -74,15 +74,19 @@ export const Header: React.FC<Props> = ({
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on click outside
+  // Close dropdown on click/touch outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
         setShowProfileMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   const getRoleBadge = (role: string) => {
@@ -109,7 +113,7 @@ export const Header: React.FC<Props> = ({
   };
 
   return (
-    <header id="main-header" className="sticky top-0 z-40 bg-white/98 backdrop-blur-md border-b border-[#E0E0E0] shadow-xs w-full overflow-hidden">
+    <header id="main-header" className="sticky top-0 z-40 bg-white/98 backdrop-blur-md border-b border-[#E0E0E0] shadow-xs w-full">
       {/* Top Bar with Prominent Branding & Tools */}
       <div className="max-w-5xl mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-1.5 sm:gap-3">
         {/* Left: Prominent Brand / Logo */}
@@ -190,8 +194,9 @@ export const Header: React.FC<Props> = ({
             <div className="relative shrink-0" ref={profileMenuRef}>
               <button
                 id="btn-user-profile-menu"
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-1 sm:gap-1.5 bg-gray-100 hover:bg-gray-200/80 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg border border-[#E0E0E0] text-[11px] sm:text-xs transition-colors cursor-pointer shrink-0 max-w-[120px] sm:max-w-[170px]"
+                type="button"
+                onClick={() => setShowProfileMenu((prev) => !prev)}
+                className="flex items-center gap-1 sm:gap-1.5 bg-gray-100 hover:bg-gray-200/80 active:bg-gray-300 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg border border-[#E0E0E0] text-[11px] sm:text-xs transition-colors cursor-pointer shrink-0 max-w-[120px] sm:max-w-[170px]"
                 title="View User Profile"
               >
                 <div className="w-5 h-5 rounded-full overflow-hidden bg-[#004D40] text-white flex items-center justify-center text-[10px] font-bold shrink-0 border border-gray-300">
@@ -223,7 +228,7 @@ export const Header: React.FC<Props> = ({
               {showProfileMenu && (
                 <div
                   id="profile-dropdown-card"
-                  className="absolute right-0 mt-2 w-68 bg-white rounded-2xl shadow-xl border border-gray-200 py-3 px-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 text-left"
+                  className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 py-3 px-3.5 z-[100] animate-in fade-in zoom-in-95 duration-150 text-left ring-1 ring-black/10"
                 >
                   <div className="flex items-start gap-2.5 pb-3 border-b border-gray-100">
                     <div className="relative group shrink-0">
