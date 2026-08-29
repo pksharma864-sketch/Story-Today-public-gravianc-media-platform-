@@ -57,7 +57,7 @@ export const StoryTodayLogo: React.FC<LogoProps> = ({
   const iconSizeMap = {
     sm: 'w-8 h-8 sm:w-10 sm:h-10 min-w-[32px] sm:min-w-[40px]',
     md: 'w-12 h-12 sm:w-16 sm:h-16 min-w-[48px] sm:min-w-[64px]',
-    header: 'w-9 h-9 sm:w-11 sm:h-11 min-w-[36px] sm:min-w-[44px]',
+    header: 'w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 min-w-[56px] sm:min-w-[64px] md:min-w-[80px]',
     lg: 'w-20 h-20 sm:w-24 sm:h-24 min-w-[80px] sm:min-w-[96px]',
     xl: 'w-28 h-28 sm:w-36 sm:h-36 min-w-[112px] sm:min-w-[144px]',
     '2xl': 'w-36 h-36 sm:w-44 sm:h-44 min-w-[144px] sm:min-w-[176px]',
@@ -71,13 +71,13 @@ export const StoryTodayLogo: React.FC<LogoProps> = ({
     >
       {/* Official story-today.in Logo Emblem (Permanent Default Logo or Custom Uploaded Branding) */}
       <div
-        className={`relative flex-shrink-0 ${iconSizeMap[size] || iconSizeMap.header} transition-transform duration-300 group-hover:scale-105 flex items-center justify-center drop-shadow-md`}
+        className={`relative flex-shrink-0 ${iconSizeMap[size] || iconSizeMap.header} transition-transform duration-300 group-hover:scale-105 flex items-center justify-center`}
       >
         {!imageError ? (
           <img
             src={imageSrc}
             alt="Story Today Official Logo"
-            className="w-full h-full object-contain rounded-2xl shadow-xl border-2 border-[#004D40]/20 bg-white p-1"
+            className="w-full h-full object-contain rounded-2xl shadow-xl filter drop-shadow-md"
             onError={() => setImageError(true)}
           />
         ) : (
