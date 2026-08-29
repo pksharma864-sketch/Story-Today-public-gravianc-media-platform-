@@ -53,15 +53,15 @@ export const StoryTodayLogo: React.FC<LogoProps> = ({
     return () => window.removeEventListener('storage', updateLogo);
   }, [customSrc]);
 
-  // Dimension mappings for the icon emblem (Big and Bold)
+  // Dimension mappings for the icon emblem
   const iconSizeMap = {
-    sm: 'w-12 h-12 min-w-[48px]',
-    md: 'w-16 h-16 sm:w-20 sm:h-20 min-w-[64px] sm:min-w-[80px]',
-    header: 'w-16 h-16 sm:w-20 sm:h-20 min-w-[64px] sm:min-w-[80px]',
-    lg: 'w-24 h-24 sm:w-28 sm:h-28 min-w-[96px] sm:min-w-[112px]',
-    xl: 'w-32 h-32 sm:w-40 sm:h-40 min-w-[128px] sm:min-w-[160px]',
-    '2xl': 'w-40 h-40 sm:w-48 sm:h-48 min-w-[160px] sm:min-w-[192px]',
-    splash: 'w-36 h-36 sm:w-48 sm:h-48 min-w-[144px] sm:min-w-[192px]',
+    sm: 'w-8 h-8 sm:w-10 sm:h-10 min-w-[32px] sm:min-w-[40px]',
+    md: 'w-12 h-12 sm:w-16 sm:h-16 min-w-[48px] sm:min-w-[64px]',
+    header: 'w-9 h-9 sm:w-11 sm:h-11 min-w-[36px] sm:min-w-[44px]',
+    lg: 'w-20 h-20 sm:w-24 sm:h-24 min-w-[80px] sm:min-w-[96px]',
+    xl: 'w-28 h-28 sm:w-36 sm:h-36 min-w-[112px] sm:min-w-[144px]',
+    '2xl': 'w-36 h-36 sm:w-44 sm:h-44 min-w-[144px] sm:min-w-[176px]',
+    splash: 'w-32 h-32 sm:w-40 sm:h-40 min-w-[128px] sm:min-w-[160px]',
   };
 
   return (

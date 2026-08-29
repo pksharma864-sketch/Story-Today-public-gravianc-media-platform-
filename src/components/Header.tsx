@@ -109,14 +109,14 @@ export const Header: React.FC<Props> = ({
   };
 
   return (
-    <header id="main-header" className="sticky top-0 z-40 bg-white/98 backdrop-blur-md border-b border-[#E0E0E0] shadow-xs">
+    <header id="main-header" className="sticky top-0 z-40 bg-white/98 backdrop-blur-md border-b border-[#E0E0E0] shadow-xs w-full overflow-hidden">
       {/* Top Bar with Prominent Branding & Tools */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
-        {/* Left: Prominent Brand / Logo (Strictly Logo only, no text/domain) */}
-        <div className="flex items-center gap-3">
+      <div className="max-w-5xl mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-1.5 sm:gap-3">
+        {/* Left: Prominent Brand / Logo */}
+        <div className="flex items-center shrink-0">
           <button
             type="button"
-            className="cursor-pointer group flex items-center bg-transparent border-0 p-0 focus:outline-none"
+            className="cursor-pointer group flex items-center bg-transparent border-0 p-0 focus:outline-none shrink-0"
             onClick={() => {
               if (onLogoClick) {
                 onLogoClick();
@@ -138,33 +138,33 @@ export const Header: React.FC<Props> = ({
         </div>
 
         {/* Right Tools: Language + User Auth + Admin + Create */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
-          {/* Mobile frame toggle */}
+        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0 flex-nowrap">
+          {/* Mobile frame toggle (Desktop only) */}
           <button
             id="btn-toggle-viewport"
             onClick={onToggleMobileView}
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-[#F5F5F5] rounded-lg transition-colors border border-[#E0E0E0]"
+            className="hidden lg:flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-[#F5F5F5] rounded-lg transition-colors border border-[#E0E0E0] shrink-0"
             title={isMobileView ? 'Switch to Desktop View' : 'Switch to Mobile Frame'}
           >
             {isMobileView ? (
               <>
                 <Monitor className="w-3.5 h-3.5 text-[#004D40]" />
-                <span className="hidden lg:inline">Desktop View</span>
+                <span>Desktop View</span>
               </>
             ) : (
               <>
                 <Smartphone className="w-3.5 h-3.5 text-[#004D40]" />
-                <span className="hidden lg:inline">Mobile Frame</span>
+                <span>Mobile Frame</span>
               </>
             )}
           </button>
 
           {/* Language Switcher */}
-          <div className="flex items-center bg-[#E0F2F1]/70 p-0.5 rounded-lg border border-[#B2DFDB]">
+          <div className="flex items-center bg-[#E0F2F1]/70 p-0.5 rounded-lg border border-[#B2DFDB] shrink-0">
             <button
               id="btn-lang-en"
               onClick={() => onLanguageChange('en')}
-              className={`px-2 py-1 text-[11px] sm:text-xs font-bold rounded-md uppercase tracking-wider transition-all ${
+              className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-bold rounded-md uppercase tracking-wider transition-all ${
                 lang === 'en'
                   ? 'bg-[#004D40] text-white shadow-xs'
                   : 'text-[#004D40] hover:bg-[#E0F2F1]'
@@ -175,7 +175,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="btn-lang-hi"
               onClick={() => onLanguageChange('hi')}
-              className={`px-2 py-1 text-[11px] sm:text-xs font-bold rounded-md uppercase tracking-wider transition-all ${
+              className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-bold rounded-md uppercase tracking-wider transition-all ${
                 lang === 'hi'
                   ? 'bg-[#004D40] text-white shadow-xs'
                   : 'text-[#004D40] hover:bg-[#E0F2F1]'
@@ -187,11 +187,11 @@ export const Header: React.FC<Props> = ({
 
           {/* User Account State: Login / Create Account OR Profile Pill with Dropdown */}
           {currentUser ? (
-            <div className="relative" ref={profileMenuRef}>
+            <div className="relative shrink-0" ref={profileMenuRef}>
               <button
                 id="btn-user-profile-menu"
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200/80 px-2 py-1 sm:py-1.5 rounded-lg border border-[#E0E0E0] text-xs transition-colors cursor-pointer"
+                className="flex items-center gap-1 sm:gap-1.5 bg-gray-100 hover:bg-gray-200/80 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg border border-[#E0E0E0] text-[11px] sm:text-xs transition-colors cursor-pointer shrink-0 max-w-[120px] sm:max-w-[170px]"
                 title="View User Profile"
               >
                 <div className="w-5 h-5 rounded-full overflow-hidden bg-[#004D40] text-white flex items-center justify-center text-[10px] font-bold shrink-0 border border-gray-300">
@@ -206,17 +206,17 @@ export const Header: React.FC<Props> = ({
                     <span>{currentUser.name.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
-                <span className="font-bold text-gray-800 hidden sm:inline max-w-[110px] truncate">
+                <span className="font-bold text-gray-800 hidden sm:inline max-w-[70px] sm:max-w-[100px] truncate">
                   {currentUser.name}
                 </span>
                 <span
-                  className={`text-[9px] uppercase font-mono px-1.5 py-0.2 rounded border font-bold ${
+                  className={`text-[8px] sm:text-[9px] uppercase font-mono px-1 sm:px-1.5 py-0.2 rounded border font-bold shrink-0 ${
                     getRoleBadge(currentUser.role).bg
                   }`}
                 >
                   {getRoleBadge(currentUser.role).label}
                 </span>
-                <ChevronDown className="w-3 h-3 text-gray-400" />
+                <ChevronDown className="w-3 h-3 text-gray-400 shrink-0" />
               </button>
 
               {/* Profile Dropdown Card */}
@@ -361,15 +361,15 @@ export const Header: React.FC<Props> = ({
             </div>
           ) : (
             /* Clear Login & Create Account Option Group */
-            <div className="flex items-center gap-1 sm:gap-1.5">
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
               {/* Login Button */}
               <button
                 id="btn-header-login"
                 onClick={() => onOpenLoginModal('login')}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-bold text-gray-700 bg-white hover:bg-gray-100 border border-[#E0E0E0] transition-colors shadow-xs"
+                className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-gray-700 bg-white hover:bg-gray-100 border border-[#E0E0E0] transition-colors shadow-xs shrink-0"
                 title="Login to your account"
               >
-                <LogIn className="w-3.5 h-3.5 text-[#004D40]" />
+                <LogIn className="w-3.5 h-3.5 text-[#004D40] shrink-0" />
                 <span>{lang === 'hi' ? 'लॉगिन' : 'Login'}</span>
               </button>
 
@@ -377,10 +377,10 @@ export const Header: React.FC<Props> = ({
               <button
                 id="btn-header-register"
                 onClick={() => onOpenLoginModal('register')}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-bold text-[#004D40] bg-[#E0F2F1] hover:bg-[#B2DFDB] border border-[#B2DFDB] transition-colors shadow-xs"
+                className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-[#004D40] bg-[#E0F2F1] hover:bg-[#B2DFDB] border border-[#B2DFDB] transition-colors shadow-xs shrink-0"
                 title="Create Citizen or Reporter Account"
               >
-                <UserPlus className="w-3.5 h-3.5" />
+                <UserPlus className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden sm:inline">
                   {lang === 'hi' ? 'खाता बनाएं' : 'Create Account'}
                 </span>
@@ -395,15 +395,15 @@ export const Header: React.FC<Props> = ({
           <button
             id="btn-admin-toggle"
             onClick={onAdminToggle}
-            className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+            className={`relative flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all border shrink-0 ${
               isAdmin
                 ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs'
                 : 'bg-white hover:bg-gray-100 text-gray-700 border-[#E0E0E0]'
             }`}
             title="Admin Management Panel"
           >
-            <ShieldCheck className={`w-3.5 h-3.5 ${isAdmin ? 'text-amber-700' : 'text-gray-400'}`} />
-            <span className="hidden sm:inline">
+            <ShieldCheck className={`w-3.5 h-3.5 shrink-0 ${isAdmin ? 'text-amber-700' : 'text-gray-400'}`} />
+            <span className="hidden md:inline">
               {isAdmin ? t.adminBadge : 'Admin'}
             </span>
             {isAdmin && pendingApprovalsCount > 0 && (
@@ -417,17 +417,18 @@ export const Header: React.FC<Props> = ({
           <button
             id="btn-header-post"
             onClick={() => onOpenCreateModal()}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-[#004D40] hover:bg-[#00382E] text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-xs transition-colors"
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-[#004D40] hover:bg-[#00382E] text-white rounded-lg text-[11px] sm:text-xs font-bold uppercase tracking-wider shadow-xs transition-colors shrink-0 whitespace-nowrap"
+            title={lang === 'hi' ? 'नया पोस्ट या समाचार जोड़ें' : 'Create New Story or News'}
           >
-            <Plus className="w-4 h-4 text-[#E0F2F1]" />
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#E0F2F1] shrink-0" />
             <span className="hidden sm:inline">{lang === 'hi' ? '+ नया पोस्ट' : '+ New Post'}</span>
-            <span className="sm:hidden">{lang === 'hi' ? 'पोस्ट' : 'Post'}</span>
+            <span className="sm:hidden">{lang === 'hi' ? '+ पोस्ट' : '+ Post'}</span>
           </button>
         </div>
       </div>
 
       {/* Nav Tabs & Search Row */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3 border-t border-[#E0E0E0] bg-[#FAFAFA]">
+      <div className="max-w-5xl mx-auto px-2.5 sm:px-4 md:px-6 py-2 flex items-center justify-between gap-2 sm:gap-3 border-t border-[#E0E0E0] bg-[#FAFAFA]">
         {/* Navigation Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
           <button
