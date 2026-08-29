@@ -18,6 +18,7 @@ import {
   fetchStats,
   updatePostApproval,
   loginUser,
+  fetchSettings,
 } from './lib/api';
 import { Header } from './components/Header';
 import { PostCard } from './components/PostCard';
@@ -202,6 +203,16 @@ export default function App() {
   useEffect(() => {
     loadData();
     parseCurrentUrl();
+
+    // Auto-sync permanent logo and branding settings from cloud
+    fetchSettings()
+      .then((settings) => {
+        if (settings.customLogo) {
+          localStorage.setItem('story_today_custom_logo', settings.customLogo);
+          window.dispatchEvent(new Event('storage'));
+        }
+      })
+      .catch((err) => console.warn('Non-critical: could not sync settings on boot', err));
 
     const handlePopState = () => {
       parseCurrentUrl();

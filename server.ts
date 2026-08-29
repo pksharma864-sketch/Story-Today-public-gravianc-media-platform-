@@ -57,7 +57,7 @@ let cachedPosts: any[] = [];
 let cachedIdCards: any[] = [];
 let cachedSettings: { adminPassword?: string; customLogo?: string | null } = {
   adminPassword: 'admin123',
-  customLogo: null,
+  customLogo: '/logo.svg',
 };
 
 // Initial default clean admin account (Permanent Master Admin)
@@ -162,10 +162,11 @@ async function initFirestoreData() {
       cachedSettings = {
         ...data,
         adminPassword: data.adminPassword || 'admin123',
+        customLogo: data.customLogo || '/logo.svg',
       };
       console.log('[Persistence] Admin settings retrieved from Firestore.');
     } else {
-      cachedSettings = { adminPassword: 'admin123', customLogo: null };
+      cachedSettings = { adminPassword: 'admin123', customLogo: '/logo.svg' };
       await setDoc(doc(db, 'settings', 'admin_settings'), sanitizeForFirestore(cachedSettings));
     }
 
@@ -1088,14 +1089,14 @@ async function startServer() {
     res.json({
       success: true,
       settings: {
-        customLogo: cachedSettings.customLogo || null,
+        customLogo: cachedSettings.customLogo || '/logo.svg',
       },
     });
   });
 
   app.post('/api/settings/logo', async (req, res) => {
     const { logo } = req.body;
-    await persistAdminSettings({ customLogo: logo || null });
+    await persistAdminSettings({ customLogo: logo || '/logo.svg' });
     res.json({ success: true, message: 'Branding logo updated permanently.' });
   });
 

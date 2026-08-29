@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+export const DEFAULT_STORY_TODAY_LOGO = '/logo.svg';
+
 interface LogoProps {
   variant?: 'full' | 'compact' | 'icon-only' | 'badge' | 'stacked';
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'header' | 'splash';
@@ -19,7 +21,16 @@ export const StoryTodayLogo: React.FC<LogoProps> = ({
   lang = 'en',
   customSrc,
 }) => {
-  const [imageSrc, setImageSrc] = useState<string | null>(customSrc || null);
+  const getInitialLogo = () => {
+    if (customSrc) return customSrc;
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('story_today_custom_logo');
+      if (stored && stored.trim() !== '') return stored;
+    }
+    return DEFAULT_STORY_TODAY_LOGO;
+  };
+
+  const [imageSrc, setImageSrc] = useState<string>(getInitialLogo);
   const [imageError, setImageError] = useState<boolean>(false);
 
   useEffect(() => {
@@ -32,7 +43,8 @@ export const StoryTodayLogo: React.FC<LogoProps> = ({
         setImageSrc(storedLogo);
         setImageError(false);
       } else {
-        setImageSrc(null);
+        setImageSrc(DEFAULT_STORY_TODAY_LOGO);
+        setImageError(false);
       }
     };
 
@@ -57,51 +69,63 @@ export const StoryTodayLogo: React.FC<LogoProps> = ({
       className={`inline-flex items-center justify-center select-none ${className}`}
       id="story-today-official-logo"
     >
-      {/* Official story-today.in Logo Emblem (Big, Bold, Crisp Vector Emblem or Custom Image) */}
+      {/* Official story-today.in Logo Emblem (Permanent Default Logo or Custom Uploaded Branding) */}
       <div
         className={`relative flex-shrink-0 ${iconSizeMap[size] || iconSizeMap.header} transition-transform duration-300 group-hover:scale-105 flex items-center justify-center drop-shadow-md`}
       >
-        {imageSrc && !imageError ? (
+        {!imageError ? (
           <img
             src={imageSrc}
-            alt="Story Today Logo"
-            className="w-full h-full object-contain rounded-2xl shadow-xl border-2 border-[#004D40]/20 bg-white p-1.5"
+            alt="Story Today Official Logo"
+            className="w-full h-full object-contain rounded-2xl shadow-xl border-2 border-[#004D40]/20 bg-white p-1"
             onError={() => setImageError(true)}
           />
         ) : (
           <svg
-            viewBox="0 0 48 48"
+            viewBox="0 0 512 512"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             className="w-full h-full filter drop-shadow-lg"
             shapeRendering="geometricPrecision"
           >
-            {/* Base rounded shield / emblem container with bold bevel & border */}
-            <rect width="48" height="48" rx="13" fill="#004D40" />
-            <rect x="1" y="1" width="46" height="46" rx="12" stroke="#80CBC4" strokeWidth="1.5" strokeOpacity="0.6" />
+            <defs>
+              <linearGradient id="fallbackBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#004D40" />
+                <stop offset="100%" stopColor="#002D25" />
+              </linearGradient>
+              <linearGradient id="fallbackAccentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#E11D48" />
+                <stop offset="100%" stopColor="#BE123C" />
+              </linearGradient>
+            </defs>
 
-            {/* Folded Newspaper / Editorial Document Back Sheet Shadow */}
-            <rect x="8.5" y="7.5" width="31" height="33" rx="3.5" fill="#002D25" />
+            {/* App Icon Background Shield */}
+            <rect width="512" height="512" rx="120" fill="url(#fallbackBgGrad)" />
+            <rect x="12" y="12" width="488" height="488" rx="108" stroke="#80CBC4" strokeWidth="8" strokeOpacity="0.4" fill="none" />
 
-            {/* Front crisp white news sheet with bold borders */}
-            <rect x="10.5" y="8.5" width="27" height="31" rx="3" fill="#FFFFFF" stroke="#E2E8F0" strokeWidth="0.75" />
+            {/* Newspaper Sheet Back Shadow */}
+            <rect x="90" y="80" width="332" height="352" rx="36" fill="#001F19" />
 
-            {/* Top Bold Red Breaking / Masthead Bar */}
-            <rect x="13.5" y="11.5" width="21" height="5.5" rx="1.5" fill="#E11D48" />
+            {/* Crisp Newspaper Front */}
+            <rect x="106" y="92" width="300" height="328" rx="30" fill="#FFFFFF" />
 
-            {/* Bold Editorial Headline */}
-            <rect x="13.5" y="19.5" width="13" height="3" rx="0.8" fill="#004D40" />
-            
-            {/* Bold Content Lines */}
-            <rect x="13.5" y="24.5" width="21" height="2" rx="0.6" fill="#1E293B" />
-            <rect x="13.5" y="28" width="21" height="2" rx="0.6" fill="#334155" />
-            <rect x="13.5" y="31.5" width="15" height="2" rx="0.6" fill="#64748B" />
-            <rect x="13.5" y="35" width="11" height="1.8" rx="0.5" fill="#94A3B8" />
+            {/* Bold Masthead Bar (Red Breaking Header) */}
+            <rect x="138" y="124" width="236" height="56" rx="14" fill="url(#fallbackAccentGrad)" />
+            <text x="256" y="162" fontFamily="'Plus Jakarta Sans', Arial, sans-serif" fontSize="28" fontWeight="900" fill="#FFFFFF" textAnchor="middle" letterSpacing="2">STORY TODAY</text>
 
-            {/* Live Citizen Beacon / Pen nib focal badge */}
-            <circle cx="31.5" cy="20.5" r="4" fill="#004D40" />
-            <circle cx="31.5" cy="20.5" r="2.2" fill="#E0F2F1" />
-            <circle cx="31.5" cy="20.5" r="1.1" fill="#E11D48" />
+            {/* Editorial Headline Bar */}
+            <rect x="138" y="208" width="144" height="28" rx="8" fill="#004D40" />
+            <circle cx="346" cy="222" r="14" fill="#10B981" />
+
+            {/* News Content Article Lines */}
+            <rect x="138" y="258" width="236" height="18" rx="6" fill="#1E293B" />
+            <rect x="138" y="292" width="236" height="18" rx="6" fill="#475569" />
+            <rect x="138" y="326" width="170" height="18" rx="6" fill="#64748B" />
+            <rect x="138" y="360" width="120" height="16" rx="6" fill="#94A3B8" />
+
+            {/* Verified Stamp / Badge */}
+            <circle cx="342" cy="352" r="32" fill="#004D40" />
+            <path d="M330 352 L338 360 L356 342" stroke="#FFFFFF" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           </svg>
         )}
 
