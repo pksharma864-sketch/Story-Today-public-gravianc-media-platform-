@@ -224,60 +224,96 @@ async function initFirestoreData() {
     // Save local snapshot
     syncToLocalDisk();
 
-    // 5. Attach Live Real-Time Firestore Sync Listeners
-    onSnapshot(
+    // 5. Attach Resilient Live Real-Time Firestore Sync Listeners
+    setupResilientFirestoreListeners();
+  } catch (err) {
+    console.error('[Persistence] Error syncing with Firestore on boot:', err);
+    loadLocalFallback();
+  }
+}
+
+// Resilient LiveSync Listener Manager with auto-reconnection on RST_STREAM / gRPC drops
+let unsubs: (() => void)[] = [];
+let reconnectTimeout: NodeJS.Timeout | null = null;
+
+function setupResilientFirestoreListeners() {
+  if (!db) return;
+
+  // Clear previous listeners if any
+  unsubs.forEach((unsub) => {
+    try {
+      unsub();
+    } catch (_) {}
+  });
+  unsubs = [];
+
+  const handleListenerError = (name: string, err: any) => {
+    // Check if it's transient gRPC stream reset (RST_STREAM, internal error, code 13)
+    const errStr = String(err?.message || err || '');
+    const isStreamReset = errStr.includes('RST_STREAM') || errStr.includes('Code: 13') || errStr.includes('INTERNAL');
+
+    if (isStreamReset) {
+      console.warn(`[Firestore LiveSync] Stream reset detected on ${name} collection. Scheduling graceful reconnect in 5s...`);
+    } else {
+      console.error(`[Firestore LiveSync] ${name} snapshot error:`, errStr);
+    }
+
+    if (!reconnectTimeout) {
+      reconnectTimeout = setTimeout(() => {
+        reconnectTimeout = null;
+        console.log('[Firestore LiveSync] Reconnecting listeners...');
+        setupResilientFirestoreListeners();
+      }, 5000);
+    }
+  };
+
+  try {
+    const unsubPosts = onSnapshot(
       collection(db, 'posts'),
       (snapshot) => {
         cachedPosts = snapshot.docs.map((d) => d.data());
         syncToLocalDisk();
-        console.log(`[Firestore LiveSync] Updated ${cachedPosts.length} posts in real-time.`);
       },
-      (err) => {
-        console.error('[Firestore LiveSync] Posts snapshot error:', err);
-      }
+      (err) => handleListenerError('posts', err)
     );
+    unsubs.push(unsubPosts);
 
-    onSnapshot(
+    const unsubUsers = onSnapshot(
       collection(db, 'users'),
       (snapshot) => {
         if (!snapshot.empty) {
           cachedUsers = snapshot.docs.map((d) => d.data());
           syncToLocalDisk();
-          console.log(`[Firestore LiveSync] Updated ${cachedUsers.length} users in real-time.`);
         }
       },
-      (err) => {
-        console.error('[Firestore LiveSync] Users snapshot error:', err);
-      }
+      (err) => handleListenerError('users', err)
     );
+    unsubs.push(unsubUsers);
 
-    onSnapshot(
+    const unsubCards = onSnapshot(
       collection(db, 'id_cards'),
       (snapshot) => {
         cachedIdCards = snapshot.docs.map((d) => d.data());
         syncToLocalDisk();
-        console.log(`[Firestore LiveSync] Updated ${cachedIdCards.length} ID cards in real-time.`);
       },
-      (err) => {
-        console.error('[Firestore LiveSync] ID cards snapshot error:', err);
-      }
+      (err) => handleListenerError('id_cards', err)
     );
+    unsubs.push(unsubCards);
 
-    onSnapshot(
+    const unsubSettings = onSnapshot(
       doc(db, 'settings', 'admin_settings'),
       (snap) => {
         if (snap.exists()) {
           cachedSettings = snap.data() as any;
-          console.log('[Firestore LiveSync] Admin settings updated in real-time.');
         }
       },
-      (err) => {
-        console.error('[Firestore LiveSync] Settings snapshot error:', err);
-      }
+      (err) => handleListenerError('settings', err)
     );
+    unsubs.push(unsubSettings);
+
+    console.log('[Firestore LiveSync] Real-time persistence listeners attached.');
   } catch (err) {
-    console.error('[Persistence] Error syncing with Firestore on boot:', err);
-    loadLocalFallback();
+    handleListenerError('initial_attach', err);
   }
 }
 

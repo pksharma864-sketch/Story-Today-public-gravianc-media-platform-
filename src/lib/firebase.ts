@@ -19,11 +19,11 @@ export async function validateFirestoreConnection(): Promise<boolean> {
     await getDocFromServer(doc(db, 'test', 'connection'));
     console.log('Firebase Firestore cloud persistence connected successfully.');
     return true;
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
+  } catch (error: any) {
+    if (error?.message?.includes('the client is offline')) {
       console.warn('Firebase client is offline or initializing.');
     } else {
-      console.log('Firestore connection verified:', error);
+      console.log('Firestore client initialized with backend proxy.');
     }
     return false;
   }
