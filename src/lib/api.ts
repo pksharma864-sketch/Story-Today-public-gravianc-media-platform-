@@ -473,3 +473,105 @@ export async function deleteIdCard(cardId: string): Promise<{ success: boolean; 
   }
 }
 
+// ==========================================
+// BLOGGER / story-today.in IMPORTER API
+// ==========================================
+
+export interface BloggerPreviewItem {
+  bloggerId: string;
+  title: string;
+  content: string;
+  summary: string;
+  published: string;
+  author: string;
+  categories: string[];
+  mappedCategory: string;
+  imageUrl?: string;
+  originalLink?: string;
+  isAlreadyImported?: boolean;
+}
+
+export interface BloggerPreviewResponse {
+  success: boolean;
+  feedTitle?: string;
+  totalAvailable: number;
+  startIndex: number;
+  maxResults: number;
+  itemsCount: number;
+  items: BloggerPreviewItem[];
+  error?: string;
+}
+
+export interface BloggerImportResult {
+  success: boolean;
+  importedCount: number;
+  skippedCount: number;
+  totalProcessed: number;
+  message?: string;
+  posts?: PostItem[];
+  error?: string;
+}
+
+export async function fetchBloggerFeedPreview(params?: {
+  feedUrl?: string;
+  startIndex?: number;
+  maxResults?: number;
+  category?: string;
+}): Promise<BloggerPreviewResponse> {
+  try {
+    const q = new URLSearchParams();
+    if (params?.feedUrl) q.append('feedUrl', params.feedUrl);
+    if (params?.startIndex) q.append('startIndex', String(params.startIndex));
+    if (params?.maxResults) q.append('maxResults', String(params.maxResults));
+    if (params?.category && params.category !== 'all') q.append('category', params.category);
+
+    const query = q.toString() ? `?${q.toString()}` : '';
+    const res = await fetch(`${API_BASE}/import/blogger/preview${query}`);
+    const data = await res.json();
+    return data;
+  } catch (err: any) {
+    console.error('API fetchBloggerFeedPreview error:', err);
+    return {
+      success: false,
+      totalAvailable: 0,
+      startIndex: 1,
+      maxResults: 25,
+      itemsCount: 0,
+      items: [],
+      error: err?.message || 'Failed to fetch preview from Blogger feed',
+    };
+  }
+}
+
+export async function executeBloggerImport(payload: {
+  feedUrl?: string;
+  mode?: 'selected' | 'batch';
+  selectedArticles?: BloggerPreviewItem[];
+  batchSize?: number;
+  startIndex?: number;
+  autoApprove?: boolean;
+  skipExisting?: boolean;
+  authorNameOverride?: string;
+  categoryOverride?: string;
+}): Promise<BloggerImportResult> {
+  try {
+    const res = await fetch(`${API_BASE}/import/blogger/execute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    return data;
+  } catch (err: any) {
+    console.error('API executeBloggerImport error:', err);
+    return {
+      success: false,
+      importedCount: 0,
+      skippedCount: 0,
+      totalProcessed: 0,
+      error: err?.message || 'Failed to execute import from Blogger',
+    };
+  }
+}
+
+

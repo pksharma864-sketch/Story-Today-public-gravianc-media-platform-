@@ -1438,6 +1438,385 @@ async function startServer() {
     res.json({ success: true, message: 'Post deleted permanently from cloud database.' });
   });
 
+  // ==========================================
+  // BLOGGER (story-today.in) ARTICLE IMPORTER APIs
+  // ==========================================
+
+  function cleanBloggerHtml(html: string): string {
+    if (!html) return '';
+    let text = html;
+    // Replace breaks and paragraphs with newlines
+    text = text.replace(/<br\s*[\/]?>/gi, '\n');
+    text = text.replace(/<\/p>/gi, '\n\n');
+    text = text.replace(/<\/div>/gi, '\n');
+    text = text.replace(/<\/h[1-6]>/gi, '\n\n');
+    text = text.replace(/<li[^>]*>/gi, '• ');
+    text = text.replace(/<\/li>/gi, '\n');
+    // Strip remaining HTML tags
+    text = text.replace(/<[^>]+>/g, '');
+    // Decode HTML entities
+    text = text
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&#8216;/g, '‘')
+      .replace(/&#8217;/g, '’')
+      .replace(/&#8220;/g, '“')
+      .replace(/&#8221;/g, '”')
+      .replace(/&#8211;/g, '–')
+      .replace(/&#8212;/g, '—')
+      .replace(/&#038;/g, '&');
+    // Clean excessive blank lines
+    text = text.replace(/\n{3,}/g, '\n\n').trim();
+    return text;
+  }
+
+  function extractBloggerImage(entry: any): string | undefined {
+    let img: string | undefined = undefined;
+    // 1. Search in HTML body for high-resolution <img> tag
+    if (entry.content && entry.content.$t) {
+      const match = entry.content.$t.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (match && match[1] && !match[1].includes('icon_') && !match[1].includes('blank.gif')) {
+        img = match[1];
+      }
+    }
+    // 2. Fallback to media$thumbnail and upgrade to high resolution
+    if (!img && entry.media$thumbnail && entry.media$thumbnail.url) {
+      img = entry.media$thumbnail.url.replace(/\/s[0-9]+(-[a-zA-Z0-9_-]+)*\//, '/s1600/');
+    }
+    return img;
+  }
+
+  function mapBloggerCategory(categories?: string[]): string {
+    if (!categories || categories.length === 0) return 'general';
+    const rawList = categories.map((c) => (c || '').toLowerCase().trim());
+    
+    for (const raw of rawList) {
+      if (raw.includes('health') || raw.includes('hospital') || raw.includes('wellness') || raw.includes('medical') || raw.includes('स्वास्थ्य') || raw.includes('डॉक्टर')) {
+        if (raw.includes('press release') || raw.includes('विज्ञप्ति')) return 'press_release_health';
+        if (raw.includes('mental') || raw.includes('मानसिक')) return 'mental_health';
+        return 'health_hospital';
+      }
+      if (raw.includes('press release') || raw.includes('press_release') || raw.includes('प्रेस विज्ञप्ति')) {
+        return 'press_release';
+      }
+      if (raw.includes('geo-politics') || raw.includes('geopolitics') || raw.includes('foreign') || raw.includes('world') || raw.includes('diplomacy') || raw.includes('भू-राजनीति')) {
+        return 'geo_politics';
+      }
+      if (raw.includes('politics') || raw.includes('political') || raw.includes('election') || raw.includes('government') || raw.includes('राजनीति') || raw.includes('चुनाव')) {
+        return 'politics';
+      }
+      if (raw.includes('education') || raw.includes('career') || raw.includes('school') || raw.includes('college') || raw.includes('exam') || raw.includes('शिक्षा') || raw.includes('करियर')) {
+        return 'education_career';
+      }
+      if (raw.includes('disaster') || raw.includes('environment') || raw.includes('climate') || raw.includes('flood') || raw.includes('weather') || raw.includes('पर्यावरण') || raw.includes('आपदा') || raw.includes('बाढ़')) {
+        return 'environment';
+      }
+      if (raw.includes('tech') || raw.includes('digital') || raw.includes('ai') || raw.includes('software') || raw.includes('mobile') || raw.includes('तकनीक')) {
+        return 'technology';
+      }
+      if (raw.includes('science') || raw.includes('invention') || raw.includes('space') || raw.includes('research') || raw.includes('विज्ञान') || raw.includes('आविष्कार')) {
+        return 'science_invention';
+      }
+      if (raw.includes('sport') || raw.includes('cricket') || raw.includes('football') || raw.includes('olympics') || raw.includes('खेल')) {
+        return 'sports';
+      }
+      if (raw.includes('agriculture') || raw.includes('kisan') || raw.includes('farming') || raw.includes('crop') || raw.includes('कृषि') || raw.includes('किसान')) {
+        return 'agriculture';
+      }
+      if (raw.includes('business') || raw.includes('market') || raw.includes('economic') || raw.includes('finance') || raw.includes('trade') || raw.includes('बाजार') || raw.includes('अर्थ')) {
+        return 'market_economics';
+      }
+      if (raw.includes('art') || raw.includes('culture') || raw.includes('heritage') || raw.includes('cinema') || raw.includes('film') || raw.includes('कला') || raw.includes('संस्कृति')) {
+        return 'art_culture';
+      }
+      if (raw.includes('product') || raw.includes('review') || raw.includes('gadget') || raw.includes('समीक्षा')) {
+        return 'product_review';
+      }
+      if (raw.includes('social') || raw.includes('society') || raw.includes('community') || raw.includes('women') || raw.includes('सामाजिक')) {
+        return 'social';
+      }
+      if (raw.includes('civic') || raw.includes('city') || raw.includes('nagar') || raw.includes('road') || raw.includes('water') || raw.includes('नगर')) {
+        return 'civic';
+      }
+    }
+    return 'general';
+  }
+
+  function detectCityFromContent(text: string, title: string): string {
+    const combined = `${title} ${text.slice(0, 300)}`.toLowerCase();
+    if (combined.includes('काठमांडू') || combined.includes('nepal') || combined.includes('नेपाल')) return 'Kathmandu / International';
+    if (combined.includes('करनाल') || combined.includes('karnal')) return 'Karnal';
+    if (combined.includes('गुरुग्राम') || combined.includes('gurugram') || combined.includes('gurgaon')) return 'Gurugram';
+    if (combined.includes('साकेत') || combined.includes('दिल्ली') || combined.includes('delhi')) return 'New Delhi / NCR';
+    if (combined.includes('चंडीगढ़') || combined.includes('chandigarh')) return 'Chandigarh';
+    if (combined.includes('जयपुर') || combined.includes('jaipur')) return 'Jaipur';
+    if (combined.includes('लखनऊ') || combined.includes('lucknow')) return 'Lucknow';
+    if (combined.includes('मुंबई') || combined.includes('mumbai')) return 'Mumbai';
+    if (combined.includes('पटना') || combined.includes('patna')) return 'Patna';
+    return 'National / Global';
+  }
+
+  function normalizeBloggerFeedUrl(rawUrl?: string): string {
+    let url = (rawUrl || 'https://story-today.in').trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = `https://${url}`;
+    }
+    // Remove trailing slash
+    url = url.replace(/\/+$/, '');
+    
+    // If it already has feeds/posts/default in it
+    if (url.includes('/feeds/posts/default')) {
+      if (!url.includes('alt=json')) {
+        url += (url.includes('?') ? '&' : '?') + 'alt=json';
+      }
+      return url;
+    }
+    
+    return `${url}/feeds/posts/default?alt=json`;
+  }
+
+  // Preview Blogger Feed (Fetch articles directly from story-today.in)
+  app.get('/api/import/blogger/preview', async (req, res) => {
+    try {
+      const feedUrl = normalizeBloggerFeedUrl(req.query.feedUrl as string);
+      const startIndex = Math.max(1, parseInt(req.query.startIndex as string) || 1);
+      const maxResults = Math.min(100, Math.max(1, parseInt(req.query.maxResults as string) || 25));
+      const categoryFilter = req.query.category as string;
+
+      let targetUrl = `${feedUrl}&start-index=${startIndex}&max-results=${maxResults}`;
+      if (categoryFilter && categoryFilter.trim() !== '' && categoryFilter !== 'all') {
+        // Encode category query if requested
+        const parts = feedUrl.split('/feeds/posts/default');
+        targetUrl = `${parts[0]}/feeds/posts/default/-/${encodeURIComponent(categoryFilter.trim())}?alt=json&start-index=${startIndex}&max-results=${maxResults}`;
+      }
+
+      console.log(`[Blogger Importer] Fetching preview from: ${targetUrl}`);
+      const response = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; StoryToday-Importer/1.0)',
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch from Blogger (HTTP ${response.status}: ${response.statusText})`);
+      }
+
+      const data = await response.json();
+      const feed = data.feed || {};
+      const totalAvailable = parseInt(feed.openSearch$totalResults?.$t || '0', 10);
+      const entries: any[] = feed.entry || [];
+
+      const items = entries.map((entry: any) => {
+        const rawTitle = entry.title?.$t || 'Untitled Story';
+        const rawContent = entry.content?.$t || entry.summary?.$t || '';
+        const cleanContent = cleanBloggerHtml(rawContent);
+        const categories = entry.category?.map((c: any) => c.term).filter(Boolean) || [];
+        const mappedCategory = mapBloggerCategory(categories);
+        const imageUrl = extractBloggerImage(entry);
+        const originalLink = entry.link?.find((l: any) => l.rel === 'alternate')?.href || '';
+        const bloggerId = entry.id?.$t || '';
+        const author = entry.author?.[0]?.name?.$t || 'P.K. Sharma';
+        const published = entry.published?.$t || new Date().toISOString();
+
+        // Check if article is already imported
+        const isAlreadyImported = cachedPosts.some(
+          (p) =>
+            (p.bloggerId && p.bloggerId === bloggerId) ||
+            (p.sourceUrl && originalLink && p.sourceUrl === originalLink) ||
+            (p.title && p.title.trim().toLowerCase() === rawTitle.trim().toLowerCase())
+        );
+
+        return {
+          bloggerId,
+          title: rawTitle,
+          content: cleanContent,
+          summary: cleanContent.slice(0, 180) + (cleanContent.length > 180 ? '...' : ''),
+          published,
+          author,
+          categories,
+          mappedCategory,
+          imageUrl,
+          originalLink,
+          isAlreadyImported,
+        };
+      });
+
+      res.json({
+        success: true,
+        feedTitle: feed.title?.$t || 'Story-Today',
+        totalAvailable,
+        startIndex,
+        maxResults,
+        itemsCount: items.length,
+        items,
+      });
+    } catch (err: any) {
+      console.error('[Blogger Importer] Preview error:', err);
+      res.status(500).json({
+        success: false,
+        error: err.message || 'Failed to fetch Blogger feed from website.',
+      });
+    }
+  });
+
+  // Execute Blogger Import (Batch or Selected)
+  app.post('/api/import/blogger/execute', async (req, res) => {
+    try {
+      const {
+        feedUrl,
+        mode = 'selected',
+        selectedArticles,
+        batchSize = 25,
+        startIndex = 1,
+        autoApprove = true,
+        skipExisting = true,
+        authorNameOverride,
+        categoryOverride,
+      } = req.body;
+
+      let articlesToImport: any[] = [];
+
+      if (mode === 'selected' && Array.isArray(selectedArticles) && selectedArticles.length > 0) {
+        articlesToImport = selectedArticles;
+      } else {
+        // Fetch requested batch from Blogger directly
+        const normalizedUrl = normalizeBloggerFeedUrl(feedUrl);
+        const fetchUrl = `${normalizedUrl}&start-index=${startIndex}&max-results=${Math.min(100, batchSize)}`;
+        console.log(`[Blogger Importer] Batch fetching for execution from: ${fetchUrl}`);
+        
+        const response = await fetch(fetchUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; StoryToday-Importer/1.0)',
+            Accept: 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch batch from Blogger (HTTP ${response.status})`);
+        }
+
+        const data = await response.json();
+        const entries: any[] = data.feed?.entry || [];
+        articlesToImport = entries.map((entry: any) => {
+          const rawTitle = entry.title?.$t || 'Untitled Story';
+          const rawContent = entry.content?.$t || entry.summary?.$t || '';
+          const cleanContent = cleanBloggerHtml(rawContent);
+          const categories = entry.category?.map((c: any) => c.term).filter(Boolean) || [];
+          const mappedCategory = mapBloggerCategory(categories);
+          const imageUrl = extractBloggerImage(entry);
+          const originalLink = entry.link?.find((l: any) => l.rel === 'alternate')?.href || '';
+          const bloggerId = entry.id?.$t || '';
+          const author = entry.author?.[0]?.name?.$t || 'P.K. Sharma';
+          const published = entry.published?.$t || new Date().toISOString();
+
+          return {
+            bloggerId,
+            title: rawTitle,
+            content: cleanContent,
+            summary: cleanContent.slice(0, 180) + (cleanContent.length > 180 ? '...' : ''),
+            published,
+            author,
+            categories,
+            mappedCategory,
+            imageUrl,
+            originalLink,
+          };
+        });
+      }
+
+      console.log(`[Blogger Importer] Processing ${articlesToImport.length} articles for import...`);
+
+      let importedCount = 0;
+      let skippedCount = 0;
+      const importedPosts: any[] = [];
+      const now = new Date().toISOString();
+
+      for (const item of articlesToImport) {
+        const rawTitle = (item.title || '').trim();
+        const bloggerId = item.bloggerId || '';
+        const originalLink = item.originalLink || item.sourceUrl || '';
+
+        // Check if already exists in cache/Firestore
+        const isDuplicate = cachedPosts.some(
+          (p) =>
+            (p.bloggerId && bloggerId && p.bloggerId === bloggerId) ||
+            (p.sourceUrl && originalLink && p.sourceUrl === originalLink) ||
+            (p.title && p.title.trim().toLowerCase() === rawTitle.toLowerCase())
+        );
+
+        if (isDuplicate && skipExisting) {
+          skippedCount++;
+          continue;
+        }
+
+        const isHindi = /[\u0900-\u097F]/.test(rawTitle);
+        const detectedCity = detectCityFromContent(item.content || '', rawTitle);
+        const finalCategory = categoryOverride && categoryOverride !== 'auto' ? categoryOverride : item.mappedCategory || 'general';
+        const finalAuthor = authorNameOverride?.trim() || item.author || 'P.K. Sharma';
+
+        const postId = 'blog_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+        const publishedDate = item.published || now;
+
+        const newPost = {
+          id: postId,
+          type: 'news',
+          title: rawTitle,
+          titleHi: isHindi ? rawTitle : undefined,
+          content: item.content || '',
+          contentHi: isHindi ? item.content : undefined,
+          summary: item.summary || (item.content ? item.content.slice(0, 180) + '...' : undefined),
+          category: finalCategory,
+          location: {
+            city: detectedCity,
+            area: 'Story-Today Online',
+          },
+          authorName: finalAuthor,
+          authorRole: 'Blogger / Editor',
+          authorAvatar: undefined,
+          imageUrl: item.imageUrl || undefined,
+          createdAt: publishedDate,
+          updatedAt: now,
+          views: Math.floor(45 + Math.random() * 85),
+          upvotes: Math.floor(3 + Math.random() * 12),
+          isBreaking: false,
+          isPinned: false,
+          approvalStatus: autoApprove ? 'approved' : 'pending',
+          approvedBy: autoApprove ? 'Chief Editor (Blogger Import)' : undefined,
+          approvedAt: autoApprove ? now : undefined,
+          bloggerId: bloggerId || undefined,
+          sourceUrl: originalLink || undefined,
+          comments: [],
+        };
+
+        await persistPost(newPost);
+        importedPosts.push(newPost);
+        importedCount++;
+      }
+
+      console.log(`[Blogger Importer] Finished import. Imported: ${importedCount}, Skipped: ${skippedCount}`);
+
+      res.json({
+        success: true,
+        importedCount,
+        skippedCount,
+        totalProcessed: articlesToImport.length,
+        message: `Successfully imported ${importedCount} articles from story-today.in into database (${skippedCount} duplicates skipped).`,
+        posts: importedPosts,
+      });
+    } catch (err: any) {
+      console.error('[Blogger Importer] Execution error:', err);
+      res.status(500).json({
+        success: false,
+        error: err.message || 'Failed to execute article import from Blogger.',
+      });
+    }
+  });
+
   // Vite middleware for development vs static in production
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

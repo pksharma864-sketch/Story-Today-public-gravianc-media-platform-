@@ -27,6 +27,8 @@ import {
   Edit3,
   XCircle,
   FileCheck,
+  Globe,
+  ExternalLink,
 } from 'lucide-react';
 
 interface Props {
@@ -438,6 +440,28 @@ export const PostDetailView: React.FC<Props> = ({
         <div className="prose prose-slate max-w-none text-[#1A1A1A] text-sm sm:text-base leading-relaxed whitespace-pre-line my-6">
           {content}
         </div>
+
+        {/* Source Citation for Imported Articles */}
+        {post.sourceUrl && (
+          <div className="my-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex flex-wrap items-center justify-between gap-2 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-[#004D40]" />
+              <span>
+                {lang === 'hi' ? 'मूल स्रोत: ' : 'Original Source: '}
+                <strong className="text-gray-800">story-today.in</strong>
+              </span>
+            </div>
+            <a
+              href={post.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[#004D40] hover:underline font-bold flex items-center gap-1"
+            >
+              <span>{lang === 'hi' ? 'मूल लेख देखें' : 'View on story-today.in'}</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        )}
 
         {/* Official Response Box if available */}
         {post.officialResponse && (

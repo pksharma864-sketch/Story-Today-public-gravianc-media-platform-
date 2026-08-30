@@ -3,6 +3,7 @@ import { PostItem, Language, AppStats, UserAccount, ApprovalStatus, UserRole, Re
 import { translations, categoriesMap } from '../i18n/translations';
 import { StoryTodayLogo } from './StoryTodayLogo';
 import { ReporterIdCardModal } from './ReporterIdCardModal';
+import { BloggerImportSection } from './BloggerImportSection';
 import {
   fetchUsers,
   createUser,
@@ -49,6 +50,7 @@ import {
   BadgeCheck,
   Phone,
   MapPin,
+  Globe,
 } from 'lucide-react';
 
 interface Props {
@@ -85,7 +87,7 @@ export const AdminPanel: React.FC<Props> = ({
   const [authError, setAuthError] = useState('');
 
   // Active Admin Sub-tab
-  const [adminTab, setAdminTab] = useState<'approvals' | 'id_cards' | 'users' | 'security' | 'branding' | 'overview'>('approvals');
+  const [adminTab, setAdminTab] = useState<'approvals' | 'id_cards' | 'users' | 'security' | 'branding' | 'overview' | 'blogger_import'>('approvals');
 
   // Approvals Filter Tab
   const [approvalFilter, setApprovalFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
@@ -660,6 +662,19 @@ export const AdminPanel: React.FC<Props> = ({
                 >
                   <ImageIcon className="w-4 h-4" />
                   <span>Logo & Brand</span>
+                </button>
+
+                <button
+                  id="tab-admin-blogger-import"
+                  onClick={() => setAdminTab('blogger_import')}
+                  className={`px-3 py-2 text-xs font-bold rounded-lg uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-2 ${
+                    adminTab === 'blogger_import'
+                      ? 'bg-[#004D40] text-white shadow-xs'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <Globe className="w-4 h-4 text-emerald-300" />
+                  <span>Import (story-today.in)</span>
                 </button>
 
                 <button
@@ -1797,6 +1812,17 @@ export const AdminPanel: React.FC<Props> = ({
                     </div>
                   </div>
                 </div>
+              )}
+
+              {/* ------------------------------------------- */}
+              {/* TAB 7: BLOGGER (story-today.in) IMPORTER */}
+              {/* ------------------------------------------- */}
+              {adminTab === 'blogger_import' && (
+                <BloggerImportSection
+                  lang={lang}
+                  onRefreshData={onRefreshData}
+                  existingPosts={posts}
+                />
               )}
 
               {/* Footer Controls */}

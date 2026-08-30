@@ -72,6 +72,10 @@ export interface PostItem {
   statusHistory?: StatusHistoryItem[];
   officialResponse?: OfficialResponse;
   comments?: PostComment[];
+
+  // Imported Content Source Info (e.g. Blogger / story-today.in)
+  bloggerId?: string;
+  sourceUrl?: string;
 }
 
 export type IdCardStatus = 'not_applied' | 'pending' | 'approved' | 'rejected';
