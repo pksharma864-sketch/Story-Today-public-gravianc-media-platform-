@@ -17,8 +17,11 @@ import {
   UserCheck,
   Mail,
   Camera,
-  Upload,
   Trash2,
+  Clock,
+  ShieldCheck,
+  ArrowRight,
+  Info,
 } from 'lucide-react';
 
 interface Props {
@@ -35,7 +38,7 @@ export const UserLoginModal: React.FC<Props> = ({
   onLoginSuccess,
 }) => {
   const t = translations[lang];
-  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+  const [mode, setMode] = useState<'login' | 'register' | 'pending_notice'>(initialMode);
 
   // Login Form State
   const [loginUsername, setLoginUsername] = useState('');
@@ -53,6 +56,13 @@ export const UserLoginModal: React.FC<Props> = ({
   const [showRegPass, setShowRegPass] = useState(false);
   const [showRegConfirmPass, setShowRegConfirmPass] = useState(false);
 
+  // Registered User Summary for Pending Notice
+  const [registeredUserInfo, setRegisteredUserInfo] = useState<{
+    name: string;
+    username: string;
+    role: UserRole;
+  } | null>(null);
+
   // Shared State
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -62,6 +72,7 @@ export const UserLoginModal: React.FC<Props> = ({
     setMode(initialMode);
     setErrorMsg('');
     setSuccessMsg('');
+    setRegisteredUserInfo(null);
   }, [initialMode]);
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,15 +174,14 @@ export const UserLoginModal: React.FC<Props> = ({
       });
 
       if (res.success && res.user) {
-        setSuccessMsg(
-          lang === 'hi'
-            ? `खाता सफलतापूर्वक बन गया! स्वागत है, ${res.user.name}!`
-            : `Account created successfully! Welcome, ${res.user.name}!`
-        );
-        setTimeout(() => {
-          onLoginSuccess(res.user!);
-          onClose();
-        }, 700);
+        // Switch to Pending Approval screen
+        setRegisteredUserInfo({
+          name: regName.trim(),
+          username: regUsername.trim().toLowerCase(),
+          role: regRole,
+        });
+        setLoginUsername(regUsername.trim().toLowerCase());
+        setMode('pending_notice');
       } else {
         setErrorMsg(res.error || (lang === 'hi' ? 'खाता बनाने में त्रुटि हुई।' : 'Failed to create account. Username might already exist.'));
       }
@@ -274,9 +284,21 @@ export const UserLoginModal: React.FC<Props> = ({
         {/* Notifications */}
         <div className="px-5 pt-4">
           {errorMsg && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span className="font-medium">{errorMsg}</span>
+            <div
+              className={`p-3 rounded-xl flex items-start gap-2.5 text-xs ${
+                errorMsg.toLowerCase().includes('pending') || errorMsg.includes('लंबित')
+                  ? 'bg-amber-50 border border-amber-300 text-amber-900'
+                  : errorMsg.toLowerCase().includes('suspended') || errorMsg.includes('निलंबित')
+                  ? 'bg-red-50 border border-red-300 text-red-900'
+                  : 'bg-red-50 border border-red-200 text-red-700'
+              }`}
+            >
+              {errorMsg.toLowerCase().includes('pending') || errorMsg.includes('लंबित') ? (
+                <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+              )}
+              <div className="font-medium leading-relaxed">{errorMsg}</div>
             </div>
           )}
           {successMsg && (
@@ -288,7 +310,78 @@ export const UserLoginModal: React.FC<Props> = ({
         </div>
 
         {/* Form Body */}
-        {mode === 'login' ? (
+        {mode === 'pending_notice' ? (
+          /* ==================================================== */
+          /* PENDING APPROVAL SCREEN                             */
+          /* ==================================================== */
+          <div className="p-6 text-center space-y-4">
+            <div className="w-14 h-14 rounded-full bg-amber-100 border-2 border-amber-300 text-amber-700 flex items-center justify-center mx-auto shadow-xs">
+              <Clock className="w-7 h-7" />
+            </div>
+
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-[11px] font-bold uppercase tracking-wider mb-2">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
+                <span>{lang === 'hi' ? 'स्वीकृति लंबित (Pending Approval)' : 'Pending Admin Approval'}</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-serif font-bold text-gray-900">
+                {lang === 'hi' ? 'पंजीकरण अनुरोध जमा हो गया!' : 'Registration Request Submitted!'}
+              </h3>
+              <p className="text-xs text-gray-600 mt-1 max-w-sm mx-auto leading-relaxed">
+                {lang === 'hi'
+                  ? 'आपका खाता पंजीकरण सफलतापूर्वक जमा हो गया है। व्यवस्थापक (Admin) द्वारा स्वीकृति (Approval) के बाद आप लॉगिन कर सकेंगे।'
+                  : 'Your account registration has been submitted successfully. You will be able to log in once the Administrator approves your account.'}
+              </p>
+            </div>
+
+            {registeredUserInfo && (
+              <div className="bg-[#FAFAFA] border border-[#E0E0E0] rounded-xl p-3.5 text-left text-xs space-y-2 max-w-sm mx-auto">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 font-medium">{lang === 'hi' ? 'नाम' : 'Full Name'}:</span>
+                  <span className="font-bold text-gray-900">{registeredUserInfo.name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 font-medium">{lang === 'hi' ? 'यूज़रनेम' : 'Username'}:</span>
+                  <span className="font-mono font-bold text-[#004D40]">@{registeredUserInfo.username}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 font-medium">{lang === 'hi' ? 'भूमिका' : 'Role'}:</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-900 border border-blue-200">
+                    {registeredUserInfo.role}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-gray-200">
+                  <span className="text-gray-500 font-medium">{lang === 'hi' ? 'स्थिति' : 'Status'}:</span>
+                  <span className="font-bold text-amber-700 flex items-center gap-1 text-[11px]">
+                    <Clock className="w-3 h-3" /> {lang === 'hi' ? 'प्रतीक्षारत (Pending)' : 'Under Review'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-2 flex flex-col gap-2 max-w-sm mx-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setErrorMsg('');
+                  setSuccessMsg('');
+                }}
+                className="w-full py-2.5 bg-[#004D40] hover:bg-[#00382E] text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LogIn className="w-4 h-4 text-[#E0F2F1]" />
+                <span>{lang === 'hi' ? 'लॉगिन स्क्रीन पर जाएं' : 'Go to Sign In Screen'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+              >
+                {lang === 'hi' ? 'बंद करें' : 'Close'}
+              </button>
+            </div>
+          </div>
+        ) : mode === 'login' ? (
           /* ==================================================== */
           /* LOGIN FORM                                           */
           /* ==================================================== */

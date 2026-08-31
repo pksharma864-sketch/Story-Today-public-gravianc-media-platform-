@@ -520,8 +520,30 @@ async function startServer() {
       return res.status(401).json({ success: false, error: 'Invalid username or password' });
     }
 
+    if (user.status === 'pending') {
+      return res.status(403).json({
+        success: false,
+        accountStatus: 'pending',
+        error: 'यह खाता व्यवस्थापक (Admin) की स्वीकृति के लिए लंबित है। कृपया Admin द्वारा स्वीकृत होने तक प्रतीक्षा करें। (Account is pending Admin approval. Please wait for approval before logging in.)',
+      });
+    }
+
+    if (user.status === 'rejected') {
+      return res.status(403).json({
+        success: false,
+        accountStatus: 'rejected',
+        error: user.rejectionReason
+          ? `खाता अस्वीकृत कर दिया गया है: ${user.rejectionReason}`
+          : 'यह खाता पंजीकरण व्यवस्थापक द्वारा अस्वीकृत कर दिया गया है। (Account registration was rejected by Admin.)',
+      });
+    }
+
     if (user.status === 'suspended') {
-      return res.status(403).json({ success: false, error: 'This account has been suspended by Admin' });
+      return res.status(403).json({
+        success: false,
+        accountStatus: 'suspended',
+        error: 'यह खाता व्यवस्थापक द्वारा निलंबित (Suspended) कर दिया गया है। (This account has been suspended by Admin.)',
+      });
     }
 
     // Return sanitized user object
@@ -671,7 +693,7 @@ async function startServer() {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    const { name, email, avatar, phone, bio } = req.body;
+    const { name, email, avatar, phone, bio, status, rejectionReason, approvedBy } = req.body;
     const currentUser = cachedUsers[userIndex];
 
     if (name && name.trim()) {
@@ -689,6 +711,18 @@ async function startServer() {
     if (bio !== undefined) {
       currentUser.bio = bio ? bio.trim() : undefined;
     }
+    if (status && ['active', 'pending', 'rejected', 'suspended'].includes(status)) {
+      if (currentUser.username !== 'admin' && currentUser.id !== 'user_admin' && currentUser.role !== 'admin') {
+        currentUser.status = status;
+        if (status === 'active') {
+          currentUser.approvedBy = approvedBy || 'Chief Administrator';
+          currentUser.approvedAt = new Date().toISOString();
+          currentUser.rejectionReason = undefined;
+        } else if (status === 'rejected') {
+          currentUser.rejectionReason = rejectionReason || 'Registration application declined by Admin';
+        }
+      }
+    }
 
     currentUser.updatedAt = new Date().toISOString();
     await persistUser(currentUser);
@@ -704,7 +738,53 @@ async function startServer() {
     }
 
     const { password: _, ...safeUser } = currentUser;
-    res.json({ success: true, user: safeUser, message: 'Profile updated successfully.' });
+    res.json({ success: true, user: safeUser, message: 'User updated successfully.' });
+  });
+
+  // Update user status directly (Approve / Reject / Suspend / Activate)
+  app.put('/api/users/:id/status', async (req, res) => {
+    const { id } = req.params;
+    const { status, rejectionReason, approvedBy } = req.body;
+
+    if (!status || !['active', 'pending', 'rejected', 'suspended'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid status (active, pending, rejected, suspended) is required',
+      });
+    }
+
+    const userIndex = cachedUsers.findIndex((u) => u.id === id);
+    if (userIndex === -1) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const user = cachedUsers[userIndex];
+    if (user.username === 'admin' || user.id === 'user_admin' || user.role === 'admin') {
+      return res.status(400).json({ success: false, error: 'Primary Administrator account status cannot be changed' });
+    }
+
+    user.status = status;
+    user.updatedAt = new Date().toISOString();
+
+    if (status === 'active') {
+      user.approvedBy = approvedBy || 'Chief Administrator';
+      user.approvedAt = new Date().toISOString();
+      user.rejectionReason = undefined;
+    } else if (status === 'rejected') {
+      user.rejectionReason = rejectionReason || 'Registration application declined by Admin';
+    }
+
+    await persistUser(user);
+
+    const { password: _, ...safeUser } = user;
+    res.json({
+      success: true,
+      user: safeUser,
+      message:
+        status === 'active'
+          ? 'User account approved and activated successfully!'
+          : `User status changed to ${status}`,
+    });
   });
 
   // Update user profile photo specifically
@@ -740,7 +820,7 @@ async function startServer() {
 
   // Create new user account (Admin or Registration)
   app.post('/api/users', async (req, res) => {
-    const { name, username, password, role, email, avatar, phone, bio } = req.body;
+    const { name, username, password, role, email, avatar, phone, bio, status } = req.body;
 
     if (!name || !username || !password || !role) {
       return res.status(400).json({
@@ -755,6 +835,15 @@ async function startServer() {
       return res.status(400).json({ success: false, error: 'Username already exists. Please choose another.' });
     }
 
+    // Determine initial status:
+    // If explicitly provided (e.g. from Admin Panel), use it.
+    // Otherwise, 'admin' is active, but new 'reporter', 'citizen', 'moderator' are 'pending'
+    const accountStatus = status && ['active', 'pending', 'rejected', 'suspended'].includes(status)
+      ? status
+      : role === 'admin'
+      ? 'active'
+      : 'pending';
+
     const newUser: any = {
       id: 'usr_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
       name: name.trim(),
@@ -766,8 +855,13 @@ async function startServer() {
       phone: phone?.trim() || undefined,
       bio: bio?.trim() || undefined,
       createdAt: new Date().toISOString(),
-      status: 'active',
+      status: accountStatus,
     };
+
+    if (accountStatus === 'active') {
+      newUser.approvedBy = 'Admin';
+      newUser.approvedAt = new Date().toISOString();
+    }
 
     // If ID card details provided during reporter registration
     if (role === 'reporter' && req.body.idCardData) {

@@ -108,6 +108,8 @@ export interface ReporterIdCard {
   validUntil?: string;
 }
 
+export type UserStatus = 'active' | 'pending' | 'rejected' | 'suspended';
+
 export interface UserAccount {
   id: string;
   name: string;
@@ -116,11 +118,14 @@ export interface UserAccount {
   avatar?: string;
   password?: string;
   createdAt: string;
-  status: 'active' | 'suspended';
+  status: UserStatus;
   email?: string;
   phone?: string;
   bio?: string;
   idCard?: ReporterIdCard;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
 }
 
 export interface AppStats {

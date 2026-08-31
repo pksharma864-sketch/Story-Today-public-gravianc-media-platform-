@@ -1,4 +1,4 @@
-import { PostItem, AppStats, GrievanceStatus, UserAccount, ApprovalStatus, ReporterIdCard } from '../types';
+import { PostItem, AppStats, GrievanceStatus, UserAccount, ApprovalStatus, ReporterIdCard, UserStatus } from '../types';
 
 const API_BASE = '/api';
 
@@ -274,6 +274,7 @@ export async function createUser(userData: {
   avatar?: string;
   phone?: string;
   bio?: string;
+  status?: UserStatus;
 }): Promise<{ success: boolean; user?: UserAccount; error?: string }> {
   try {
     const res = await fetch(`${API_BASE}/users`, {
@@ -287,6 +288,43 @@ export async function createUser(userData: {
     console.error('API createUser error:', err);
     return { success: false, error: 'Network error while creating user' };
   }
+}
+
+export async function updateUserStatus(
+  userId: string,
+  status: UserStatus,
+  options?: { approvedBy?: string; rejectionReason?: string }
+): Promise<{ success: boolean; user?: UserAccount; message?: string; error?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/users/${userId}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status,
+        approvedBy: options?.approvedBy,
+        rejectionReason: options?.rejectionReason,
+      }),
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('API updateUserStatus error:', err);
+    return { success: false, error: 'Network error while updating user status' };
+  }
+}
+
+export async function approveUser(
+  userId: string,
+  approvedBy: string = 'Admin'
+): Promise<{ success: boolean; user?: UserAccount; message?: string; error?: string }> {
+  return updateUserStatus(userId, 'active', { approvedBy });
+}
+
+export async function rejectUser(
+  userId: string,
+  reason: string = 'Registration application declined by Admin'
+): Promise<{ success: boolean; user?: UserAccount; message?: string; error?: string }> {
+  return updateUserStatus(userId, 'rejected', { rejectionReason: reason });
 }
 
 export async function updateUserAvatar(
