@@ -535,13 +535,9 @@ export const PostDetailView: React.FC<Props> = ({
           >
             <ThumbsUp className={`w-4 h-4 ${isUpvoted ? 'fill-white text-white' : ''}`} />
             <span>
-              {isGrievance
-                ? isUpvoted
-                  ? t.supported
-                  : t.supportIssue
-                : `Upvote (${post.upvotes || 0})`}
+              {isUpvoted ? 'Liked' : 'Like'}
             </span>
-            <span className="bg-[#E0F2F1] text-[#004D40] px-2 py-0.5 rounded text-xs">
+            <span className={`px-2 py-0.5 rounded text-xs ${isUpvoted ? 'bg-white/20 text-white' : 'bg-[#E0F2F1] text-[#004D40]'}`}>
               {post.upvotes || 0}
             </span>
           </button>

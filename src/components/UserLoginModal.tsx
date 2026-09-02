@@ -48,7 +48,7 @@ export const UserLoginModal: React.FC<Props> = ({
   // Register Form State
   const [regName, setRegName] = useState('');
   const [regUsername, setRegUsername] = useState('');
-  const [regRole, setRegRole] = useState<UserRole>('citizen');
+  const [regRole, setRegRole] = useState<UserRole>('reporter');
   const [regEmail, setRegEmail] = useState('');
   const [regAvatar, setRegAvatar] = useState<string | null>(null);
   const [regPassword, setRegPassword] = useState('');
@@ -229,8 +229,8 @@ export const UserLoginModal: React.FC<Props> = ({
                     ? 'नागरिक, रिपोर्टर या व्यवस्थापक के रूप में प्रवेश करें'
                     : 'Access your Citizen, Reporter or Admin account'
                   : lang === 'hi'
-                  ? 'नागरिक या स्वतंत्र पत्रकार के रूप में तुरंत जुड़ें'
-                  : 'Join as a Citizen Reporter or Verified Journalist'}
+                  ? 'रिपोर्टर / स्वतंत्र पत्रकार के रूप में तुरंत जुड़ें'
+                  : 'Join as a Journalist / Reporter'}
               </p>
             </div>
           </div>
@@ -475,61 +475,28 @@ export const UserLoginModal: React.FC<Props> = ({
             {/* Account Role Selector Cards */}
             <div>
               <label className="block text-xs font-bold text-[#1A1A1A] mb-1.5">
-                {lang === 'hi' ? 'खाते का प्रकार चुनें' : 'Select Account Type / Role'}{' '}
+                {lang === 'hi' ? 'खाते का प्रकार' : 'Account Role'}{' '}
                 <span className="text-red-500">*</span>
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {/* Citizen Card */}
-                <div
-                  onClick={() => setRegRole('citizen')}
-                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                    regRole === 'citizen'
-                      ? 'border-[#004D40] bg-[#E0F2F1]/50 ring-2 ring-[#004D40]/20'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900">
-                      <User className="w-4 h-4 text-blue-700" />
-                      <span>{lang === 'hi' ? 'नागरिक (Citizen)' : 'Citizen'}</span>
-                    </div>
-                    {regRole === 'citizen' && (
-                      <div className="w-4 h-4 rounded-full bg-[#004D40] text-white flex items-center justify-center">
-                        <Check className="w-3 h-3" />
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-gray-600 leading-tight">
-                    {lang === 'hi'
-                      ? 'नागरिक शिकायतें दर्ज करें, वार्ड समस्याओं को ट्रैक करें और समर्थन दें।'
-                      : 'Report civic grievances, track ward complaints & upvote community stories.'}
-                  </p>
-                </div>
-
+              <div className="grid grid-cols-1 gap-2.5">
                 {/* Reporter Card */}
                 <div
                   onClick={() => setRegRole('reporter')}
-                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                    regRole === 'reporter'
-                      ? 'border-[#004D40] bg-[#E0F2F1]/50 ring-2 ring-[#004D40]/20'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
+                  className="p-3.5 rounded-xl border border-[#004D40] bg-[#E0F2F1]/50 ring-2 ring-[#004D40]/20 cursor-pointer transition-all"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900">
                       <Newspaper className="w-4 h-4 text-[#004D40]" />
                       <span>{lang === 'hi' ? 'रिपोर्टर (Reporter)' : 'Journalist / Reporter'}</span>
                     </div>
-                    {regRole === 'reporter' && (
-                      <div className="w-4 h-4 rounded-full bg-[#004D40] text-white flex items-center justify-center">
-                        <Check className="w-3 h-3" />
-                      </div>
-                    )}
+                    <div className="w-4 h-4 rounded-full bg-[#004D40] text-white flex items-center justify-center">
+                      <Check className="w-3 h-3" />
+                    </div>
                   </div>
                   <p className="text-[11px] text-gray-600 leading-tight">
                     {lang === 'hi'
-                      ? 'स्थानीय समाचार, ग्राउंड रिपोर्टिंग और ब्रेकिंग अपडेट्स प्रकाशित करें।'
-                      : 'Publish verified local news, cover ward events & ground investigations.'}
+                      ? 'स्थानीय समाचार, ग्राउंड रिपोर्टिंग, आलेख और प्रेस विज्ञप्ति प्रकाशित करें।'
+                      : 'Publish verified local news, articles, press releases & ground investigations.'}
                   </p>
                 </div>
               </div>
