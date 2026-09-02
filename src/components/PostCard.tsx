@@ -118,9 +118,7 @@ export const PostCard: React.FC<Props> = ({
                 ? lang === 'hi'
                   ? 'जन शिकायत'
                   : 'Grievance'
-                : lang === 'hi'
-                ? 'स्थानीय समाचार'
-                : 'Local News'}
+                : 'News/Article/समाचार/लेख'}
             </span>
 
             {/* Category Tag */}

@@ -648,11 +648,11 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       drawRoundRect(fx, fy, cardWidth, cardHeight, 28, '#FFFFFF', '#004D40', 4);
       drawSecurityPattern(fx + 6, fy + 200, cardWidth - 12, cardHeight - 310);
 
-      // Header Bar - Deep Emerald
+      // Header Bar - Orange
       ctx.save();
       ctx.beginPath();
       ctx.rect(fx, fy, cardWidth, 205);
-      ctx.fillStyle = '#004D40';
+      ctx.fillStyle = '#EA580C';
       ctx.fill();
       ctx.restore();
 
@@ -660,25 +660,23 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       ctx.strokeStyle = '#D97706';
       ctx.lineWidth = 3;
 
-      // Header Story Today Logo + Typography
+      // Header Story Today Logo - Centered, Bold & Clear
+      const logoSize = 80;
+      const logoX = fx + (cardWidth - logoSize) / 2;
       if (logoImg) {
-        ctx.drawImage(logoImg, fx + 42, fy + 25, 74, 74);
+        ctx.drawImage(logoImg, logoX, fy + 16, logoSize, logoSize);
       } else {
-        drawLogoEmblem(fx + 42, fy + 25, 74);
+        drawLogoEmblem(logoX, fy + 16, logoSize);
       }
 
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 35px serif, "Plus Jakarta Sans", sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('STORY TODAY', fx + 132, fy + 64);
-
-      ctx.font = 'bold 15px sans-serif';
-      ctx.fillStyle = '#A7F3D0';
-      ctx.fillText('PRESS & MEDIA CREDENTIAL', fx + 132, fy + 89);
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillStyle = '#FED7AA';
+      ctx.textAlign = 'center';
+      ctx.fillText('PRESS & MEDIA CREDENTIAL', fx + cardWidth / 2, fy + 112);
 
       ctx.font = '13px sans-serif';
-      ctx.fillStyle = '#E0F2F1';
-      ctx.fillText('राष्ट्रीय एवं प्रांतीय स्वतंत्र पत्रकारिता मंच', fx + 132, fy + 111);
+      ctx.fillStyle = '#FFF7ED';
+      ctx.fillText('राष्ट्रीय एवं प्रांतीय स्वतंत्र पत्रकारिता मंच', fx + cardWidth / 2, fy + 132);
 
       // Gold Accent Strip
       ctx.fillStyle = '#D97706';
@@ -772,9 +770,9 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       // Official Stamp on Front Card (Bottom Right corner)
       drawOfficialSeal(fx + cardWidth - 110, tableY + 225, 52);
 
-      // Card Footer with Security Strip & Signatures
+      // Card Footer with Security Strip & Signatures - Orange
       const footerY = fy + cardHeight - 110;
-      ctx.fillStyle = '#004D40';
+      ctx.fillStyle = '#EA580C';
       ctx.fillRect(fx, footerY, cardWidth, 110);
 
       ctx.fillStyle = '#D97706';
@@ -785,7 +783,7 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       ctx.font = 'bold 14px sans-serif';
       ctx.fillText('VERIFIED PRESS HOLDER', fx + 40, footerY + 45);
       ctx.font = '12px sans-serif';
-      ctx.fillStyle = '#A7F3D0';
+      ctx.fillStyle = '#FED7AA';
       ctx.fillText('Democratic Citizen Journalism Bureau', fx + 40, footerY + 70);
 
       ctx.textAlign = 'right';
@@ -806,27 +804,29 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       drawRoundRect(bx, by, cardWidth, cardHeight, 28, '#FFFFFF', '#004D40', 4);
       drawSecurityPattern(bx + 6, by + 140, cardWidth - 12, cardHeight - 250);
 
-      // Top Banner with Logo
-      drawRoundRect(bx, by, cardWidth, 125, 28, '#004D40');
-      ctx.fillStyle = '#004D40';
+      // Top Banner with Logo - Orange
+      drawRoundRect(bx, by, cardWidth, 125, 28, '#EA580C');
+      ctx.fillStyle = '#EA580C';
       ctx.fillRect(bx, by + 50, cardWidth, 75);
 
       ctx.fillStyle = '#D97706';
       ctx.fillRect(bx, by + 125, cardWidth, 6);
 
+      const bLogoSize = 64;
+      const bLogoX = bx + (cardWidth - bLogoSize) / 2;
       if (logoImg) {
-        ctx.drawImage(logoImg, bx + 36, by + 26, 68, 68);
+        ctx.drawImage(logoImg, bLogoX, by + 16, bLogoSize, bLogoSize);
       } else {
-        drawLogoEmblem(bx + 36, by + 26, 68);
+        drawLogoEmblem(bLogoX, by + 16, bLogoSize);
       }
 
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 24px serif, "Plus Jakarta Sans", sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('STORY TODAY — PRESS RECOGNITION', bx + 120, by + 65);
-      ctx.font = '13px sans-serif';
-      ctx.fillStyle = '#A7F3D0';
-      ctx.fillText('Editorial Guidelines & Legal Declarations', bx + 120, by + 92);
+      ctx.font = 'bold 18px serif, "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('PRESS RECOGNITION', bx + cardWidth / 2, by + 95);
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = '#FED7AA';
+      ctx.fillText('Editorial Guidelines & Legal Declarations', bx + cardWidth / 2, by + 114);
 
       // Crucial Disclaimer Box (Required by guidelines)
       const discY = by + 155;
@@ -902,15 +902,15 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
       // Official Stamp on Back Card
       drawOfficialSeal(bx + cardWidth - 140, qrY + 42, 54);
 
-      // Back Footer
+      // Back Footer - Orange
       const bFooterY = by + cardHeight - 120;
-      drawRoundRect(bx + 35, bFooterY, cardWidth - 70, 90, 14, '#004D40');
+      drawRoundRect(bx + 35, bFooterY, cardWidth - 70, 90, 14, '#EA580C');
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 15px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('STORY TODAY EDITORIAL BUREAU', bx + cardWidth / 2, bFooterY + 35);
       ctx.font = '13px sans-serif';
-      ctx.fillStyle = '#A7F3D0';
+      ctx.fillStyle = '#FED7AA';
       ctx.fillText('Citizen Journalism & Democratic Civic Accountability Platform', bx + cardWidth / 2, bFooterY + 60);
 
       // -------------------------------------------------------------
@@ -1431,26 +1431,21 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
                   <div
                     ref={cardFrontRef}
                     id="id-card-front-preview"
-                    className="w-full max-w-[390px] bg-white rounded-2xl border-2 border-[#004D40] shadow-2xl overflow-hidden text-[#111827] flex flex-col relative animate-in fade-in duration-200"
+                    className="w-full max-w-[390px] bg-white rounded-2xl border-2 border-orange-500 shadow-2xl overflow-hidden text-[#111827] flex flex-col relative animate-in fade-in duration-200"
                   >
-                    {/* Top Header with Story Today Official Logo */}
-                    <div className="bg-gradient-to-r from-[#004D40] via-[#00382E] to-[#004D40] text-white p-3.5 text-center relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-8 -mt-8 pointer-events-none" />
+                    {/* Top Header with Story Today Official Logo - Orange */}
+                    <div className="bg-gradient-to-r from-orange-600 via-orange-500 to-orange-600 text-white p-3.5 text-center relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 pointer-events-none" />
                       
-                      {/* Logo + Masthead Header */}
-                      <div className="flex items-center justify-center gap-2.5">
-                        <StoryTodayLogo size="sm" />
-                        <div className="text-left">
-                          <div className="font-serif font-black text-lg tracking-tight text-white leading-none">
-                            STORY TODAY
-                          </div>
-                          <p className="text-[9px] font-extrabold tracking-[0.2em] text-[#A7F3D0] uppercase mt-1">
-                            PRESS & MEDIA CREDENTIAL
-                          </p>
-                        </div>
+                      {/* Centered Official Logo - Bold & Clear */}
+                      <div className="flex flex-col items-center justify-center">
+                        <StoryTodayLogo size="md" className="mx-auto" />
+                        <p className="text-[10px] font-extrabold tracking-[0.2em] text-amber-100 uppercase mt-2">
+                          PRESS & MEDIA CREDENTIAL
+                        </p>
                       </div>
 
-                      <p className="text-[9px] text-[#E0F2F1] mt-1.5">
+                      <p className="text-[9px] text-orange-50 mt-1.5">
                         राष्ट्रीय एवं प्रांतीय स्वतंत्र पत्रकारिता मंच
                       </p>
 
@@ -1571,16 +1566,16 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Bottom Security Footer */}
-                    <div className="mt-auto bg-[#004D40] text-white p-3 flex items-center justify-between text-[10px] border-t border-amber-500">
+                    {/* Bottom Security Footer - Orange */}
+                    <div className="mt-auto bg-orange-600 text-white p-3 flex items-center justify-between text-[10px] border-t border-amber-400">
                       <div>
-                        <p className="font-bold tracking-wider text-emerald-200">VERIFIED PRESS HOLDER</p>
-                        <p className="text-[9px] text-gray-300">Civic Dispatch & Media Bureau</p>
+                        <p className="font-bold tracking-wider text-amber-100">VERIFIED PRESS HOLDER</p>
+                        <p className="text-[9px] text-orange-100">Civic Dispatch & Media Bureau</p>
                       </div>
 
                       <div className="text-right">
-                        <p className="font-serif italic font-bold text-amber-300 text-xs">Chief Editor</p>
-                        <p className="text-[9px] text-gray-300">Authorized Signatory</p>
+                        <p className="font-serif italic font-bold text-yellow-200 text-xs">Chief Editor</p>
+                        <p className="text-[9px] text-orange-100">Authorized Signatory</p>
                       </div>
                     </div>
                   </div>
@@ -1589,18 +1584,16 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
                   <div
                     ref={cardBackRef}
                     id="id-card-back-preview"
-                    className="w-full max-w-[390px] bg-white rounded-2xl border-2 border-[#004D40] shadow-2xl overflow-hidden text-[#111827] flex flex-col relative animate-in fade-in duration-200"
+                    className="w-full max-w-[390px] bg-white rounded-2xl border-2 border-orange-500 shadow-2xl overflow-hidden text-[#111827] flex flex-col relative animate-in fade-in duration-200"
                   >
-                    {/* Top Header with Logo */}
-                    <div className="bg-[#004D40] text-white p-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <StoryTodayLogo size="sm" />
-                        <div className="text-left">
-                          <h4 className="font-serif font-bold text-sm tracking-wide text-white leading-tight">
-                            STORY TODAY — PRESS RECOGNITION
-                          </h4>
-                          <p className="text-[9px] text-emerald-200">Editorial Guidelines & Legal Rules</p>
-                        </div>
+                    {/* Top Header with Logo - Orange */}
+                    <div className="bg-orange-600 text-white p-3 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <StoryTodayLogo size="sm" className="mx-auto" />
+                        <h4 className="font-serif font-bold text-xs tracking-wide text-white leading-tight mt-1.5">
+                          PRESS RECOGNITION
+                        </h4>
+                        <p className="text-[9px] text-amber-100">Editorial Guidelines & Legal Rules</p>
                       </div>
                     </div>
 
@@ -1651,10 +1644,10 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Bottom Footer */}
-                    <div className="mt-auto bg-[#004D40] text-white p-2.5 text-center text-[10px]">
+                    {/* Bottom Footer - Orange */}
+                    <div className="mt-auto bg-orange-600 text-white p-2.5 text-center text-[10px]">
                       <p className="font-bold text-white">Story Today — Central Editorial Desk</p>
-                      <p className="text-[9px] text-emerald-200">Citizen Journalism & Democratic Civic Accountability Platform</p>
+                      <p className="text-[9px] text-amber-100">Citizen Journalism & Democratic Civic Accountability Platform</p>
                     </div>
                   </div>
                 )}

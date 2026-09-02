@@ -355,9 +355,7 @@ export const PostDetailView: React.FC<Props> = ({
               ? lang === 'hi'
                 ? 'नागरिक शिकायत / Citizen Grievance'
                 : 'Citizen Grievance / नागरिक शिकायत'
-              : lang === 'hi'
-              ? 'स्थानीय समाचार / Local News'
-              : 'Local News / स्थानीय समाचार'}
+              : 'News/Article/समाचार/लेख'}
           </p>
 
           <div className="flex items-center gap-1.5">
