@@ -43,7 +43,7 @@ export const CreatePostModal: React.FC<Props> = ({
   const [titleHi, setTitleHi] = useState('');
   const [content, setContent] = useState('');
   const [contentHi, setContentHi] = useState('');
-  const [category, setCategory] = useState(type === 'grievance' ? 'water_supply' : 'general');
+  const [category, setCategory] = useState(type === 'grievance' ? 'civic' : 'general');
   const [city, setCity] = useState('');
   const [area, setArea] = useState('');
   const [ward, setWard] = useState('');
@@ -80,7 +80,7 @@ export const CreatePostModal: React.FC<Props> = ({
 
   const handleTypeChange = (newType: PostType) => {
     setType(newType);
-    setCategory(newType === 'grievance' ? 'water_supply' : 'general');
+    setCategory(newType === 'grievance' ? 'civic' : 'general');
     if (!currentUser) {
       setAuthorRole(newType === 'grievance' ? 'Local Citizen' : 'Reporter');
     }
@@ -138,46 +138,7 @@ export const CreatePostModal: React.FC<Props> = ({
     }
   };
 
-  const relevantCategories = Object.entries(categoriesMap).filter(([key]) => {
-    if (type === 'grievance') {
-      return [
-        'water_supply',
-        'roads_traffic',
-        'electricity',
-        'sanitation_waste',
-        'drainage_sewage',
-        'street_lights',
-        'public_safety',
-        'health_hospital',
-        'corruption',
-        'other',
-      ].includes(key);
-    } else {
-      return [
-        'general',
-        'press_release',
-        'press_release_health',
-        'education_career',
-        'geo_politics',
-        'mental_health',
-        'politics',
-        'social',
-        'art_culture',
-        'product_review',
-        'science_invention',
-        'technology',
-        'sports',
-        'agriculture',
-        'market_economics',
-        'civic',
-        'development',
-        'education',
-        'environment',
-        'business',
-        'other',
-      ].includes(key);
-    }
-  });
+  const relevantCategories = Object.entries(categoriesMap);
 
   return (
     <div

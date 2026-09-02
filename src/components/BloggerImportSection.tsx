@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Language, PostItem } from '../types';
-import { translations, categoriesMap } from '../i18n/translations';
+import { translations, categoriesMap, legacyCategoriesMap } from '../i18n/translations';
 import {
   fetchBloggerFeedPreview,
   executeBloggerImport,
@@ -572,7 +572,7 @@ export const BloggerImportSection: React.FC<Props> = ({
             {filteredItems.map((item) => {
               const isSelected = selectedIds.has(item.bloggerId);
               const mappedCategoryLabel =
-                categoriesMap[item.mappedCategory]?.en || item.mappedCategory;
+                categoriesMap[item.mappedCategory]?.en || legacyCategoriesMap[item.mappedCategory]?.en || item.mappedCategory;
 
               return (
                 <div

@@ -1,6 +1,6 @@
 import React from 'react';
 import { PostItem, Language } from '../types';
-import { translations, categoriesMap, getStatusText } from '../i18n/translations';
+import { translations, categoriesMap, legacyCategoriesMap, getStatusText } from '../i18n/translations';
 import {
   MapPin,
   Clock,
@@ -36,7 +36,7 @@ export const PostCard: React.FC<Props> = ({
 
   const title = lang === 'hi' && post.titleHi ? post.titleHi : post.title;
   const content = lang === 'hi' && post.contentHi ? post.contentHi : post.content;
-  const categoryInfo = categoriesMap[post.category] || {
+  const categoryInfo = categoriesMap[post.category] || legacyCategoriesMap[post.category] || {
     en: post.category,
     hi: post.category,
   };

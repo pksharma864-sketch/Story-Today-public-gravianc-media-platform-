@@ -609,41 +609,30 @@ export default function App() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-[#E0E0E0] shadow-xs">
                 <div>
                   <p className="text-[10px] font-bold text-[#004D40] uppercase tracking-[0.2em] mb-1">
-                    Editorial & Civic Dispatch / नागरिक मंच
+                    {lang === 'hi'
+                      ? 'आधिकारिक प्रेस वायर एवं मीडिया नेटवर्क'
+                      : 'Official Press Wire & Media Network'}
                   </p>
                   <h1 className="text-xl sm:text-2xl font-bold text-[#1A1A1A] font-serif tracking-tight">
-                    {lang === 'hi' ? 'नागरिक मंच एवं स्वतंत्र समाचार' : 'Citizen News & Grievance Feed'}
+                    PR / Media & News Network
                   </h1>
                   <p className="text-xs text-gray-500 mt-1">
                     {lang === 'hi'
-                      ? 'अपनी आवाज उठाएं, समस्याएं दर्ज करें और ताज़ा खबरें साझा करें।'
-                      : 'Report local civic issues, track administration action, and publish news.'}
+                      ? 'प्रेस विज्ञप्तियां, मीडिया कवरेज, समाचार आलेख एवं आधिकारिक सूचनाएं प्रकाशित एवं प्रसारित करें।'
+                      : 'Publish and distribute press releases, media coverage, editorial articles, and verified news.'}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <button
-                    id="btn-quick-post-grievance"
-                    onClick={() => {
-                      setCreateInitialType('grievance');
-                      setShowCreateModal(true);
-                    }}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-red-700 hover:bg-red-800 text-white rounded-md text-xs font-bold uppercase tracking-wider shadow-xs transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>{t.postGrievance}</span>
-                  </button>
-
+                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
                   <button
                     id="btn-quick-post-news"
                     onClick={() => {
                       setCreateInitialType('news');
                       setShowCreateModal(true);
                     }}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#004D40] hover:bg-[#00382E] text-white rounded-md text-xs font-bold uppercase tracking-wider shadow-xs transition-colors"
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#004D40] hover:bg-[#00382E] text-white rounded-md text-xs font-bold uppercase tracking-wider shadow-xs transition-colors whitespace-nowrap cursor-pointer"
                   >
-                    <Plus className="w-4 h-4 text-[#E0F2F1]" />
-                    <span>{t.postNews}</span>
+                    + Post News/Articles/Press Release
                   </button>
                 </div>
               </div>
@@ -704,21 +693,12 @@ export default function App() {
                   <div className="flex items-center justify-center gap-3 pt-2">
                     <button
                       onClick={() => {
-                        setCreateInitialType('grievance');
-                        setShowCreateModal(true);
-                      }}
-                      className="px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded-md text-xs font-bold uppercase tracking-wider shadow-xs"
-                    >
-                      + {t.postGrievance}
-                    </button>
-                    <button
-                      onClick={() => {
                         setCreateInitialType('news');
                         setShowCreateModal(true);
                       }}
-                      className="px-4 py-2 bg-[#004D40] hover:bg-[#00382E] text-white rounded-md text-xs font-bold uppercase tracking-wider shadow-xs"
+                      className="px-4 py-2.5 bg-[#004D40] hover:bg-[#00382E] text-white rounded-md text-xs font-bold uppercase tracking-wider shadow-xs transition-colors cursor-pointer"
                     >
-                      + {t.postNews}
+                      + Post News/Articles/Press Release
                     </button>
                   </div>
                 </div>

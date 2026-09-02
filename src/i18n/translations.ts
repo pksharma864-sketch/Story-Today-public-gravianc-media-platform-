@@ -257,16 +257,6 @@ export const translations: Record<Language, TranslationDict> = {
 };
 
 export const categoriesMap: Record<string, { en: string; hi: string; icon: string }> = {
-  // Grievances
-  water_supply: { en: 'Water Supply', hi: 'पेयजल समस्या', icon: 'Droplets' },
-  roads_traffic: { en: 'Roads & Potholes', hi: 'सड़क व गड्ढे', icon: 'Car' },
-  electricity: { en: 'Electricity & Power', hi: 'बिजली व स्ट्रीट लाइट', icon: 'Zap' },
-  sanitation_waste: { en: 'Garbage & Sanitation', hi: 'कचरा व सफाई', icon: 'Trash2' },
-  drainage_sewage: { en: 'Drainage & Sewage', hi: 'नाली व सीवरेज', icon: 'Waves' },
-  street_lights: { en: 'Street Lighting', hi: 'मार्ग प्रकाश', icon: 'Sun' },
-  public_safety: { en: 'Public Safety & Law', hi: 'सुरक्षा व कानून', icon: 'ShieldAlert' },
-  health_hospital: { en: 'Health & Hospital', hi: 'स्वास्थ्य व अस्पताल', icon: 'Activity' },
-  corruption: { en: 'Civic Grievance / Corruption', hi: 'प्रशासनिक / भ्रष्टाचार', icon: 'AlertCircle' },
   // News & Publications
   general: { en: 'General News', hi: 'सामान्य समाचार', icon: 'Newspaper' },
   press_release: { en: 'Press Release', hi: 'प्रेस विज्ञप्ति (Press Release)', icon: 'FileText' },
@@ -289,6 +279,19 @@ export const categoriesMap: Record<string, { en: string; hi: string; icon: strin
   environment: { en: 'Environment & Climate', hi: 'पर्यावरण व मौसम', icon: 'Trees' },
   business: { en: 'Local Business & Market', hi: 'व्यापार व बाजार', icon: 'ShoppingBag' },
   other: { en: 'Other Issues', hi: 'अन्य', icon: 'Tag' },
+};
+
+// Legacy categories map for gracefully displaying existing articles without errors
+export const legacyCategoriesMap: Record<string, { en: string; hi: string; icon: string }> = {
+  water_supply: { en: 'Water Supply', hi: 'पेयजल समस्या', icon: 'Droplets' },
+  roads_traffic: { en: 'Roads & Potholes', hi: 'सड़क व गड्ढे', icon: 'Car' },
+  electricity: { en: 'Electricity & Power', hi: 'बिजली व स्ट्रीट लाइट', icon: 'Zap' },
+  sanitation_waste: { en: 'Garbage & Sanitation', hi: 'कचरा व सफाई', icon: 'Trash2' },
+  drainage_sewage: { en: 'Drainage & Sewage', hi: 'नाली व सीवरेज', icon: 'Waves' },
+  street_lights: { en: 'Street Lighting', hi: 'मार्ग प्रकाश', icon: 'Sun' },
+  public_safety: { en: 'Public Safety & Law', hi: 'सुरक्षा व कानून', icon: 'ShieldAlert' },
+  health_hospital: { en: 'Health & Hospital', hi: 'स्वास्थ्य व अस्पताल', icon: 'Activity' },
+  corruption: { en: 'Civic Grievance / Corruption', hi: 'प्रशासनिक / भ्रष्टाचार', icon: 'AlertCircle' },
 };
 
 export function getStatusText(status: GrievanceStatus | undefined, lang: Language): string {
