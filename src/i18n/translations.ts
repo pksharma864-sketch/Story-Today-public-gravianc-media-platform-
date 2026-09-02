@@ -70,6 +70,7 @@ export interface TranslationDict {
   formContentPlaceholder: string;
   formCategory: string;
   formCity: string;
+  formCountry: string;
   formArea: string;
   formWard: string;
   formLandmark: string;
@@ -149,12 +150,13 @@ export const translations: Record<Language, TranslationDict> = {
     priorityMedium: 'Medium',
     priorityHigh: 'High',
     priorityUrgent: 'Urgent',
-    formTitle: 'Headline / Grievance Subject',
-    formTitlePlaceholder: 'e.g. Broken water pipeline causing water shortage in Ward 12',
+    formTitle: 'Headline / Subject',
+    formTitlePlaceholder: 'e.g. Major development, press release or announcement headline...',
     formContent: 'Detailed Description',
     formContentPlaceholder: 'Describe the complete news story or citizen issue, affected people, time period, and exact location...',
     formCategory: 'Category',
     formCity: 'City / District',
+    formCountry: 'Country',
     formArea: 'Area / Colony',
     formWard: 'Ward No / Sector',
     formLandmark: 'Nearby Landmark',
@@ -232,12 +234,13 @@ export const translations: Record<Language, TranslationDict> = {
     priorityMedium: 'मध्यम',
     priorityHigh: 'उच्च',
     priorityUrgent: 'अति आवश्यक',
-    formTitle: 'शीर्षक / शिकायत का मुख्य विषय',
-    formTitlePlaceholder: 'उदा. वार्ड 12 में मुख्य पेयजल पाइपलाइन टूटने से जल संकट',
+    formTitle: 'शीर्षक / मुख्य विषय',
+    formTitlePlaceholder: 'उदा. मुख्य समाचार, आलेख या प्रेस विज्ञप्ति का शीर्षक...',
     formContent: 'विस्तृत विवरण',
     formContentPlaceholder: 'पूरी घटना, प्रभावित लोग, समय और स्थिति का पूरा विवरण लिखें...',
     formCategory: 'श्रेणी',
     formCity: 'शहर / जिला',
+    formCountry: 'देश (Country)',
     formArea: 'इलाका / कॉलोनी',
     formWard: 'वार्ड नं / सेक्टर',
     formLandmark: 'निकटतम पहचान स्थल (Landmark)',

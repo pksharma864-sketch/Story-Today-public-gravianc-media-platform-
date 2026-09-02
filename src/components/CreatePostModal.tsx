@@ -7,7 +7,6 @@ import {
   Image as ImageIcon,
   MapPin,
   Upload,
-  AlertTriangle,
   Flame,
   FileText,
   Building,
@@ -45,6 +44,7 @@ export const CreatePostModal: React.FC<Props> = ({
   const [contentHi, setContentHi] = useState('');
   const [category, setCategory] = useState(type === 'grievance' ? 'civic' : 'general');
   const [city, setCity] = useState('');
+  const [country, setCountry] = useState('');
   const [area, setArea] = useState('');
   const [ward, setWard] = useState('');
   const [landmark, setLandmark] = useState('');
@@ -116,6 +116,7 @@ export const CreatePostModal: React.FC<Props> = ({
         category,
         location: {
           city: city.trim(),
+          country: country.trim() || undefined,
           area: area.trim() || undefined,
           ward: ward.trim() || undefined,
           landmark: landmark.trim() || undefined,
@@ -155,16 +156,12 @@ export const CreatePostModal: React.FC<Props> = ({
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E0E0E0] bg-[#FAFAFA] shrink-0">
           <div>
             <h2 className="text-base sm:text-lg font-serif font-bold text-[#1A1A1A]">
-              {type === 'grievance' ? t.postGrievance : t.postNews}
+              + Post News/Articles/Press Release
             </h2>
             <p className="text-[10px] uppercase tracking-wider text-gray-500 mt-0.5">
-              {type === 'grievance'
-                ? lang === 'hi'
-                  ? 'नागरिक जन शिकायत दर्ज करें • समीक्षा के बाद लाइव होगी'
-                  : 'Report community grievance • Sent to Admin for review'
-                : lang === 'hi'
-                ? 'स्वतंत्र समाचार व स्थानीय खबर प्रकाशित करें'
-                : 'Publish news story • Editorial verification queue'}
+              {lang === 'hi'
+                ? 'स्वतंत्र समाचार, आलेख व प्रेस विज्ञप्ति प्रकाशित करें'
+                : 'Publish news stories, articles & press releases • Editorial verification queue'}
             </p>
           </div>
           <button
@@ -213,39 +210,16 @@ export const CreatePostModal: React.FC<Props> = ({
 
         {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 flex-1">
-          {/* Post Type Selector Tabs */}
+          {/* Single Post Option Tab */}
           <div>
-            <label className="block text-[10px] font-bold text-[#004D40] uppercase tracking-wider mb-1.5">
-              Select Post Type / प्रकार चुनें
-            </label>
-            <div className="grid grid-cols-2 gap-2 p-1 bg-[#FAFAFA] rounded-lg border border-[#E0E0E0]">
-              <button
-                type="button"
+            <div className="p-1 bg-[#FAFAFA] rounded-lg border border-[#E0E0E0]">
+              <div
                 id="btn-select-type-news"
-                onClick={() => handleTypeChange('news')}
-                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-md transition-all flex items-center justify-center gap-2 ${
-                  type === 'news'
-                    ? 'bg-[#004D40] text-white shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                className="w-full py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-md bg-[#004D40] text-white shadow-xs flex items-center justify-center gap-2 select-none"
               >
                 <FileText className="w-4 h-4 text-[#E0F2F1]" />
-                <span>📰 {t.news} (News)</span>
-              </button>
-
-              <button
-                type="button"
-                id="btn-select-type-grievance"
-                onClick={() => handleTypeChange('grievance')}
-                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-md transition-all flex items-center justify-center gap-2 ${
-                  type === 'grievance'
-                    ? 'bg-red-700 text-white shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <AlertTriangle className="w-4 h-4" />
-                <span>📢 {t.grievances} (Grievance)</span>
-              </button>
+                <span>+ Post News/Articles/Press Release</span>
+              </div>
             </div>
           </div>
 
@@ -354,7 +328,7 @@ export const CreatePostModal: React.FC<Props> = ({
               {t.location} <span className="text-red-500">*</span>
             </span>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
                 <input
                   id="input-location-city"
@@ -363,37 +337,17 @@ export const CreatePostModal: React.FC<Props> = ({
                   placeholder={t.formCity + ' *'}
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-full text-xs p-2 rounded-md border border-gray-300 bg-white font-medium focus:border-[#004D40] focus:outline-hidden"
+                  className="w-full text-xs p-2.5 rounded-md border border-gray-300 bg-white font-medium focus:border-[#004D40] focus:outline-hidden"
                 />
               </div>
               <div>
                 <input
-                  id="input-location-area"
+                  id="input-location-country"
                   type="text"
-                  placeholder={t.formArea}
-                  value={area}
-                  onChange={(e) => setArea(e.target.value)}
-                  className="w-full text-xs p-2 rounded-md border border-gray-300 bg-white focus:border-[#004D40] focus:outline-hidden"
-                />
-              </div>
-              <div>
-                <input
-                  id="input-location-ward"
-                  type="text"
-                  placeholder={t.formWard}
-                  value={ward}
-                  onChange={(e) => setWard(e.target.value)}
-                  className="w-full text-xs p-2 rounded-md border border-gray-300 bg-white focus:border-[#004D40] focus:outline-hidden"
-                />
-              </div>
-              <div>
-                <input
-                  id="input-location-landmark"
-                  type="text"
-                  placeholder={t.formLandmark}
-                  value={landmark}
-                  onChange={(e) => setLandmark(e.target.value)}
-                  className="w-full text-xs p-2 rounded-md border border-gray-300 bg-white focus:border-[#004D40] focus:outline-hidden"
+                  placeholder={t.formCountry}
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="w-full text-xs p-2.5 rounded-md border border-gray-300 bg-white focus:border-[#004D40] focus:outline-hidden"
                 />
               </div>
             </div>
@@ -523,19 +477,13 @@ export const CreatePostModal: React.FC<Props> = ({
               type="submit"
               id="btn-submit-create"
               disabled={isSubmitting}
-              className={`px-5 py-2 text-xs font-bold uppercase tracking-wider text-white rounded-md shadow-xs transition-colors flex items-center gap-1.5 ${
-                type === 'grievance'
-                  ? 'bg-red-700 hover:bg-red-800'
-                  : 'bg-[#004D40] hover:bg-[#00382E]'
-              }`}
+              className="px-5 py-2 text-xs font-bold uppercase tracking-wider text-white rounded-md shadow-xs transition-colors flex items-center gap-1.5 bg-[#004D40] hover:bg-[#00382E] cursor-pointer"
             >
               <Plus className="w-4 h-4 text-[#E0F2F1]" />
               <span>
                 {isSubmitting
                   ? 'Submitting...'
-                  : type === 'grievance'
-                  ? t.formSubmitGrievance
-                  : t.formSubmitNews}
+                  : '+ Post News/Articles/Press Release'}
               </span>
             </button>
           </div>

@@ -403,6 +403,7 @@ export const PostDetailView: React.FC<Props> = ({
             <MapPin className="w-3.5 h-3.5 text-[#004D40]" />
             <span>
               {post.location.city}
+              {post.location.country ? `, ${post.location.country}` : ''}
               {post.location.area ? `, ${post.location.area}` : ''}
               {post.location.ward ? ` (Ward ${post.location.ward})` : ''}
             </span>

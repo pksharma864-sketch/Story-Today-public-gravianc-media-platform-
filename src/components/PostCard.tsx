@@ -183,6 +183,7 @@ export const PostCard: React.FC<Props> = ({
             <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
             <span>
               {post.location.city}
+              {post.location.country ? `, ${post.location.country}` : ''}
               {post.location.area ? `, ${post.location.area}` : ''}
               {post.location.ward ? ` (Ward ${post.location.ward})` : ''}
             </span>

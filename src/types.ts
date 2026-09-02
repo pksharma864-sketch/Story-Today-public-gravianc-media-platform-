@@ -8,6 +8,7 @@ export type UserRole = 'admin' | 'reporter' | 'citizen' | 'moderator';
 
 export interface LocationInfo {
   city: string;
+  country?: string;
   area?: string;
   ward?: string;
   landmark?: string;
