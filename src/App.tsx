@@ -726,7 +726,7 @@ export default function App() {
           <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
             <div className="flex items-center gap-2">
               <StoryTodayLogo size="sm" variant="icon-only" showDomain={false} />
-              <span className="font-semibold text-gray-700">Citizen News & Grievance Network</span>
+              <span className="font-semibold text-gray-700">PR / Media & News Network</span>
             </div>
             <div className="flex items-center flex-wrap justify-center gap-3 sm:gap-4 text-[11px]">
               {currentUser ? (
