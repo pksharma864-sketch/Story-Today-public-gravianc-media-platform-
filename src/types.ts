@@ -137,3 +137,27 @@ export interface AppStats {
   inProgressGrievances: number;
   pendingApproval?: number;
 }
+
+export interface AppCategoryItem {
+  id: string;
+  en: string;
+  hi: string;
+}
+
+export const APP_TOP_CATEGORIES: AppCategoryItem[] = [
+  { id: 'all', en: 'All Stories', hi: 'सभी खबरें (All Stories)' },
+  { id: 'press_release', en: 'Press Release', hi: 'प्रेस विज्ञप्ति (Press Release)' },
+  { id: 'press_release_health', en: 'Press Release (Health)', hi: 'प्रेस विज्ञप्ति - स्वास्थ्य (Press Release Health)' },
+  { id: 'education_career', en: 'Education & Career', hi: 'शिक्षा एवं करियर (Education & Career)' },
+  { id: 'geo_politics', en: 'Geo-Politics', hi: 'भू-राजनीति (Geo-Politics)' },
+  { id: 'mental_health', en: 'Mental Health', hi: 'मानसिक स्वास्थ्य (Mental Health)' },
+  { id: 'politics', en: 'Politics', hi: 'राजनीति (Politics)' },
+  { id: 'social', en: 'Social', hi: 'सामाजिक (Social)' },
+  { id: 'art_culture', en: 'Art & Culture', hi: 'कला एवं संस्कृति (Art & Culture)' },
+  { id: 'product_review', en: 'Product Review', hi: 'उत्पाद समीक्षा (Product Review)' },
+  { id: 'science_invention', en: 'Science & Invention', hi: 'विज्ञान एवं आविष्कार (Science & Invention)' },
+  { id: 'technology', en: 'Technology', hi: 'तकनीकी (Technology)' },
+  { id: 'sports', en: 'Sports', hi: 'खेलकूद (Sports)' },
+  { id: 'agriculture', en: 'Agriculture', hi: 'कृषि एवं किसानी (Agriculture)' },
+  { id: 'market_economics', en: 'Market & Economics', hi: 'बाजार एवं अर्थशास्त्र (Market & Economics)' },
+];

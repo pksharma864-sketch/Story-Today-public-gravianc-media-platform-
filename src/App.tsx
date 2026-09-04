@@ -49,6 +49,112 @@ import {
   Info,
 } from 'lucide-react';
 
+export function matchesCategoryFilter(postCategory: string | undefined, filterCategory: string): boolean {
+  if (!filterCategory || filterCategory === 'all') return true;
+  if (!postCategory) return false;
+
+  const normPost = postCategory.toLowerCase().trim();
+  const normFilter = filterCategory.toLowerCase().trim();
+
+  if (normPost === normFilter) return true;
+
+  switch (normFilter) {
+    case 'press_release':
+      return (
+        (normPost === 'press_release' || normPost === 'press release' || normPost === 'press-release') &&
+        !normPost.includes('health')
+      );
+    case 'press_release_health':
+      return (
+        normPost === 'press_release_health' ||
+        normPost.includes('press release (health)') ||
+        normPost.includes('press_release_health') ||
+        (normPost.includes('press release') && normPost.includes('health')) ||
+        (normPost.includes('press') && normPost.includes('health'))
+      );
+    case 'education_career':
+      return (
+        normPost === 'education_career' ||
+        normPost === 'education & career' ||
+        normPost === 'education/ career' ||
+        normPost.includes('education') ||
+        normPost.includes('career')
+      );
+    case 'geo_politics':
+      return (
+        normPost === 'geo_politics' ||
+        normPost === 'geo-politics' ||
+        normPost.includes('geopolitics') ||
+        normPost.includes('geo-politics') ||
+        normPost.includes('geo politics')
+      );
+    case 'mental_health':
+      return (
+        normPost === 'mental_health' ||
+        normPost === 'mental health' ||
+        normPost.includes('mental')
+      );
+    case 'politics':
+      return (
+        normPost === 'politics' ||
+        (normPost.includes('politic') && !normPost.includes('geo'))
+      );
+    case 'social':
+      return normPost === 'social' || normPost.includes('social') || normPost.includes('society');
+    case 'art_culture':
+      return (
+        normPost === 'art_culture' ||
+        normPost === 'art & culture' ||
+        normPost.includes('art') ||
+        normPost.includes('culture')
+      );
+    case 'product_review':
+      return (
+        normPost === 'product_review' ||
+        normPost === 'product review' ||
+        normPost.includes('product') ||
+        normPost.includes('review')
+      );
+    case 'science_invention':
+      return (
+        normPost === 'science_invention' ||
+        normPost === 'science & invention' ||
+        normPost.includes('science') ||
+        normPost.includes('invention')
+      );
+    case 'technology':
+      return (
+        normPost === 'technology' ||
+        normPost === 'tech' ||
+        normPost.includes('technology') ||
+        normPost.includes('tech')
+      );
+    case 'sports':
+      return normPost === 'sports' || normPost.includes('sport');
+    case 'agriculture':
+      return (
+        normPost === 'agriculture' ||
+        normPost.includes('agriculture') ||
+        normPost.includes('kisan') ||
+        normPost.includes('farming')
+      );
+    case 'market_economics':
+      return (
+        normPost === 'market_economics' ||
+        normPost === 'market & economics' ||
+        normPost.includes('market') ||
+        normPost.includes('economic') ||
+        normPost.includes('finance') ||
+        normPost.includes('business')
+      );
+    default:
+      return (
+        normPost === normFilter ||
+        normPost.replace(/[-_ ]/g, '') === normFilter.replace(/[-_ ]/g, '')
+      );
+  }
+}
+
 export default function App() {
   // Localization
   const [lang, setLang] = useState<Language>(() => {
@@ -103,8 +209,7 @@ export default function App() {
   });
 
   // Navigation & Active Views
-  const [activeTab, setActiveTab] = useState<string>('all'); // 'all' | 'news' | 'grievances' | 'resolved'
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<string>('all'); // category id filter, 'all' by default
   const [selectedCity, setSelectedCity] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   
@@ -419,15 +524,12 @@ export default function App() {
       const status = post.approvalStatus || 'approved';
       if (!isAdmin && status !== 'approved') return false;
 
-      // Tab filter
-      if (activeTab === 'news' && post.type !== 'news') return false;
-      if (activeTab === 'grievances' && post.type !== 'grievance') return false;
-      if (activeTab === 'resolved' && (post.type !== 'grievance' || post.status !== 'resolved')) {
-        return false;
+      // Category filter (selected from top categories row)
+      if (activeTab !== 'all') {
+        if (!matchesCategoryFilter(post.category, activeTab)) {
+          return false;
+        }
       }
-
-      // Category filter
-      if (selectedCategory !== 'all' && post.category !== selectedCategory) return false;
 
       // City filter
       if (
@@ -465,7 +567,7 @@ export default function App() {
 
       return true;
     });
-  }, [posts, isAdmin, activeTab, selectedCategory, selectedCity, searchQuery]);
+  }, [posts, isAdmin, activeTab, selectedCity, searchQuery]);
 
   const pendingApprovalsCount = posts.filter((p) => p.approvalStatus === 'pending').length;
 
@@ -634,38 +736,6 @@ export default function App() {
                   >
                     + Post News/Articles/Press Release
                   </button>
-                </div>
-              </div>
-
-              {/* Filter Pills Row */}
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-lg border border-[#E0E0E0]">
-                {/* Categories Scroll */}
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
-                  <button
-                    id="filter-cat-all"
-                    onClick={() => setSelectedCategory('all')}
-                    className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md whitespace-nowrap transition-all ${
-                      selectedCategory === 'all'
-                        ? 'bg-[#004D40] text-white shadow-xs'
-                        : 'bg-[#FAFAFA] hover:bg-gray-100 text-gray-700 border border-[#E0E0E0]'
-                    }`}
-                  >
-                    {t.allCategories}
-                  </button>
-                  {Object.entries(categoriesMap).map(([key, val]) => (
-                    <button
-                      key={key}
-                      id={`filter-cat-${key}`}
-                      onClick={() => setSelectedCategory(key)}
-                      className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md whitespace-nowrap transition-all ${
-                        selectedCategory === key
-                          ? 'bg-[#004D40] text-white shadow-xs'
-                          : 'bg-[#FAFAFA] hover:bg-gray-100 text-gray-700 border border-[#E0E0E0]'
-                      }`}
-                    >
-                      {lang === 'hi' ? val.hi : val.en}
-                    </button>
-                  ))}
                 </div>
               </div>
 

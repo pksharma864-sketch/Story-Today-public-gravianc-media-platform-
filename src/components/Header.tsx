@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Language, UserAccount } from '../types';
+import { Language, UserAccount, APP_TOP_CATEGORIES } from '../types';
 import { translations } from '../i18n/translations';
 import { StoryTodayLogo } from './StoryTodayLogo';
 import {
@@ -434,56 +434,29 @@ export const Header: React.FC<Props> = ({
 
       {/* Nav Tabs & Search Row */}
       <div className="max-w-5xl mx-auto px-2.5 sm:px-4 md:px-6 py-2 flex items-center justify-between gap-2 sm:gap-3 border-t border-[#E0E0E0] bg-[#FAFAFA]">
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-          <button
-            id="tab-all"
-            onClick={() => onTabChange('all')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md uppercase tracking-wider whitespace-nowrap transition-all ${
-              activeTab === 'all'
-                ? 'bg-[#004D40] text-white shadow-xs'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
-            }`}
-          >
-            {t.allPosts}
-          </button>
-          <button
-            id="tab-news"
-            onClick={() => onTabChange('news')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md uppercase tracking-wider whitespace-nowrap transition-all ${
-              activeTab === 'news'
-                ? 'bg-[#004D40] text-white shadow-xs'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
-            }`}
-          >
-            📰 {t.news}
-          </button>
-          <button
-            id="tab-grievances"
-            onClick={() => onTabChange('grievances')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md uppercase tracking-wider whitespace-nowrap transition-all ${
-              activeTab === 'grievances'
-                ? 'bg-[#004D40] text-white shadow-xs'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
-            }`}
-          >
-            📢 {t.grievances}
-          </button>
-          <button
-            id="tab-resolved"
-            onClick={() => onTabChange('resolved')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md uppercase tracking-wider whitespace-nowrap transition-all ${
-              activeTab === 'resolved'
-                ? 'bg-[#004D40] text-white shadow-xs'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
-            }`}
-          >
-            ✅ {t.resolved}
-          </button>
+        {/* Navigation Category Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 flex-1 min-w-0 pr-2">
+          {APP_TOP_CATEGORIES.map((cat) => {
+            const isSelected = activeTab === cat.id;
+            return (
+              <button
+                key={cat.id}
+                id={`tab-${cat.id}`}
+                onClick={() => onTabChange(cat.id)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md uppercase tracking-wider whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+                  isSelected
+                    ? 'bg-[#004D40] text-white shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
+                }`}
+              >
+                {lang === 'hi' ? cat.hi : cat.en}
+              </button>
+            );
+          })}
         </div>
 
         {/* Search Bar */}
-        <div className="relative flex items-center">
+        <div className="relative flex items-center shrink-0">
           <div className="relative">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -492,13 +465,13 @@ export const Header: React.FC<Props> = ({
               placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-36 sm:w-60 text-xs pl-8 pr-7 py-1.5 bg-white hover:bg-gray-50 focus:bg-white rounded-md border border-[#E0E0E0] focus:border-[#004D40] focus:outline-hidden transition-all text-gray-800"
+              className="w-32 sm:w-52 text-xs pl-8 pr-7 py-1.5 bg-white hover:bg-gray-50 focus:bg-white rounded-md border border-[#E0E0E0] focus:border-[#004D40] focus:outline-hidden transition-all text-gray-800"
             />
             {searchQuery && (
               <button
                 id="btn-clear-search"
                 onClick={() => onSearchChange('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
