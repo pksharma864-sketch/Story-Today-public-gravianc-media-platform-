@@ -5,8 +5,8 @@ import './index.css';
 import { validateFirestoreConnection } from './lib/firebase';
 
 // Validate Firestore connection on boot
-validateFirestoreConnection().catch((err) => {
-  console.error('Firestore startup connection test:', err);
+validateFirestoreConnection().catch(() => {
+  // Handled inside validateFirestoreConnection with appropriate logging
 });
 
 createRoot(document.getElementById('root')!).render(

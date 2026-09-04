@@ -47,6 +47,7 @@ import {
   Bell,
   ArrowRight,
   Info,
+  ChevronDown,
 } from 'lucide-react';
 
 export function matchesCategoryFilter(postCategory: string | undefined, filterCategory: string): boolean {
@@ -569,6 +570,20 @@ export default function App() {
     });
   }, [posts, isAdmin, activeTab, selectedCity, searchQuery]);
 
+  // Feed Pagination: 25 stories at a time with "Read more..." button
+  const PAGE_SIZE = 25;
+  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
+
+  // Reset pagination to 25 whenever category, city, or search filter changes
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [activeTab, selectedCity, searchQuery]);
+
+  // Sliced posts for the main feed
+  const paginatedPosts = useMemo(() => {
+    return filteredPosts.slice(0, visibleCount);
+  }, [filteredPosts, visibleCount]);
+
   const pendingApprovalsCount = posts.filter((p) => p.approvalStatus === 'pending').length;
 
   return (
@@ -773,19 +788,46 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {filteredPosts.map((post) => (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      lang={lang}
-                      onOpen={handleOpenPost}
-                      onShare={(p) => setSharePost(p)}
-                      onUpvote={handleUpvote}
-                      isUpvoted={upvotedIds.includes(post.id)}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {paginatedPosts.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        lang={lang}
+                        onOpen={handleOpenPost}
+                        onShare={(p) => setSharePost(p)}
+                        onUpvote={handleUpvote}
+                        isUpvoted={upvotedIds.includes(post.id)}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Pagination: "Read more..." button */}
+                  {visibleCount < filteredPosts.length && (
+                    <div className="pt-8 pb-4 text-center">
+                      <button
+                        id="btn-read-more-posts"
+                        onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+                        className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-[#004D40] hover:bg-[#00382E] active:bg-[#00251F] text-white rounded-lg text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer group"
+                      >
+                        <span>{lang === 'hi' ? 'और पढ़ें... (Read more...)' : 'Read more...'}</span>
+                        <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
+                      </button>
+                      <p className="text-xs text-gray-500 mt-2.5 font-medium">
+                        {lang === 'hi'
+                          ? `${Math.min(visibleCount, filteredPosts.length)} / ${filteredPosts.length} खबरें दिखाई जा रही हैं (अगली 25 खबरें लोड करने के लिए टैप करें)`
+                          : `Showing ${Math.min(visibleCount, filteredPosts.length)} of ${filteredPosts.length} stories (tap to load next 25)`}
+                      </p>
+                    </div>
+                  )}
+
+                  {visibleCount >= filteredPosts.length && filteredPosts.length > PAGE_SIZE && (
+                    <div className="pt-6 pb-2 text-center text-xs text-gray-400 font-medium">
+                      {lang === 'hi' ? '✓ सभी उपलब्ध खबरें लोड हो चुकी हैं' : '✓ All available stories loaded'}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
