@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PostItem, Language } from '../types';
 import { translations } from '../i18n/translations';
 import { StoryTodayLogo } from './StoryTodayLogo';
+import { printStory } from '../lib/printStory';
 import { X, Copy, Check, Share2, Send, MessageCircle, Twitter, Facebook, Linkedin, ExternalLink, Printer } from 'lucide-react';
 
 interface Props {
@@ -82,8 +83,10 @@ export const ShareModal: React.FC<Props> = ({ post, lang, onClose }) => {
     window.open(url, '_blank');
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    printStory(post, lang);
   };
 
   return (
@@ -254,8 +257,9 @@ export const ShareModal: React.FC<Props> = ({ post, lang, onClose }) => {
             )}
             <button
               id="btn-print-story"
+              type="button"
               onClick={handlePrint}
-              className="flex items-center justify-center gap-1.5 py-2.5 px-3 border border-[#E0E0E0] hover:bg-gray-50 text-gray-700 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors"
+              className="flex items-center justify-center gap-1.5 py-2.5 px-3 border border-[#E0E0E0] hover:bg-gray-50 text-gray-700 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer active:scale-95"
               title="Print Summary / Save PDF"
             >
               <Printer className="w-3.5 h-3.5 text-[#004D40]" />

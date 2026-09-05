@@ -57,6 +57,10 @@
   #btn-quick-copy-link,
   #btn-print-view,
   #btn-header-post,
+  #share-modal-backdrop,
+  #login-modal-backdrop,
+  #reporter-id-card-modal-backdrop,
+  #user-profile-modal-backdrop,
   .no-print {
     display: none !important;
   }

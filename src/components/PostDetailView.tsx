@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PostItem, Language, GrievanceStatus, ApprovalStatus, UserAccount } from '../types';
 import { translations, categoriesMap, legacyCategoriesMap, getStatusText } from '../i18n/translations';
 import { GrievanceProgressBar } from './GrievanceProgressBar';
+import { printStory } from '../lib/printStory';
 import {
   ArrowLeft,
   Share2,
@@ -572,9 +573,14 @@ export const PostDetailView: React.FC<Props> = ({
             </button>
             <button
               id="btn-print-view"
-              onClick={() => window.print()}
-              className="p-2 bg-white/80 hover:bg-white text-[#856404] border border-[#FFD54F] rounded-md text-xs font-semibold"
-              title="Print Article"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                printStory(post, lang);
+              }}
+              className="p-2 bg-white/80 hover:bg-white text-[#856404] border border-[#FFD54F] rounded-md text-xs font-semibold cursor-pointer active:scale-95 transition-all"
+              title={lang === 'hi' ? 'प्रिंट करें / Save as PDF' : 'Print Article / Save as PDF'}
             >
               <Printer className="w-4 h-4" />
             </button>
