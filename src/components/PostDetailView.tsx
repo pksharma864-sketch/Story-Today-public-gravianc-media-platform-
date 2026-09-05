@@ -78,6 +78,67 @@ export const PostDetailView: React.FC<Props> = ({
     }
   }, [currentUser]);
 
+  // Synchronize Open Graph, Twitter, and document title for active article in DOM
+  useEffect(() => {
+    const titleText = (lang === 'hi' && post.titleHi) ? post.titleHi : post.title;
+    const prevTitle = document.title;
+    document.title = `${titleText} | Story Today`;
+
+    const origin = window.location.origin;
+    const isGrievance = post.type === 'grievance';
+    const pathPrefix = isGrievance ? 'grievance' : 'article';
+    const articleUrl = `${origin}/${pathPrefix}/${post.id}`;
+
+    let imageUrl = (post.imageUrl || '').trim();
+    if (!imageUrl) {
+      imageUrl = `${origin}/logo.svg`;
+    } else if (imageUrl.startsWith('data:image/')) {
+      imageUrl = `${origin}/api/posts/${post.id}/image.jpg`;
+    } else if (imageUrl.startsWith('//')) {
+      imageUrl = `https:${imageUrl}`;
+    } else if (imageUrl.startsWith('/')) {
+      imageUrl = `${origin}${imageUrl}`;
+    } else if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+      imageUrl = `${origin}/${imageUrl}`;
+    }
+
+    const description = (post.summary || post.content || '')
+      .replace(/<[^>]*>?/gm, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 250);
+
+    const updateMetaTag = (property: string, content: string, isName = false) => {
+      const selector = isName ? `meta[name="${property}"]` : `meta[property="${property}"]`;
+      let element = document.querySelector(selector) as HTMLMetaElement | null;
+      if (!element) {
+        element = document.createElement('meta');
+        if (isName) {
+          element.name = property;
+        } else {
+          element.setAttribute('property', property);
+        }
+        document.head.appendChild(element);
+      }
+      element.content = content;
+    };
+
+    updateMetaTag('og:title', titleText);
+    updateMetaTag('og:description', description);
+    updateMetaTag('og:image', imageUrl);
+    updateMetaTag('og:image:secure_url', imageUrl);
+    updateMetaTag('og:url', articleUrl);
+    updateMetaTag('og:type', 'article');
+    updateMetaTag('twitter:card', 'summary_large_image', true);
+    updateMetaTag('twitter:title', titleText, true);
+    updateMetaTag('twitter:description', description, true);
+    updateMetaTag('twitter:image', imageUrl, true);
+
+    return () => {
+      document.title = prevTitle;
+    };
+  }, [post, lang]);
+
   // Admin status update state
   const [selectedStatus, setSelectedStatus] = useState<GrievanceStatus>(
     post.status || 'submitted'

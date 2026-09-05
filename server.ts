@@ -1947,12 +1947,240 @@ async function startServer() {
     }
   });
 
-  // Vite middleware for development vs static in production
+  // =========================================================================
+  // OPEN GRAPH & SOCIAL PREVIEW HELPERS (WhatsApp, Facebook, LinkedIn, Twitter)
+  // =========================================================================
+
+  function escapeHtml(str: string): string {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function stripHtml(html: string): string {
+    if (!html) return '';
+    return String(html).replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim();
+  }
+
+  function getRequestOrigin(req: express.Request): string {
+    const forwardedProto = req.headers['x-forwarded-proto'];
+    const proto =
+      typeof forwardedProto === 'string'
+        ? forwardedProto.split(',')[0].trim()
+        : req.secure
+        ? 'https'
+        : 'http';
+    const forwardedHost = req.headers['x-forwarded-host'];
+    const host =
+      typeof forwardedHost === 'string'
+        ? forwardedHost.split(',')[0].trim()
+        : req.headers['host'] || 'localhost:3000';
+    const effectiveProto = host.includes('localhost') ? proto : 'https';
+    return `${effectiveProto}://${host}`;
+  }
+
+  function getAbsoluteImageUrl(post: any, origin: string): string {
+    let img = (post.imageUrl || '').trim();
+    if (!img) {
+      return `${origin}/logo.svg`;
+    }
+    // Base64 data images cannot be fetched by external crawlers (WhatsApp/Facebook)
+    // Serve them through our direct image binary endpoint:
+    if (img.startsWith('data:image/')) {
+      return `${origin}/api/posts/${post.id}/image.jpg`;
+    }
+    if (img.startsWith('//')) {
+      return `https:${img}`;
+    }
+    if (img.startsWith('http://') || img.startsWith('https://')) {
+      return img;
+    }
+    if (img.startsWith('/')) {
+      return `${origin}${img}`;
+    }
+    return `${origin}/${img}`;
+  }
+
+  function injectPostMetaTags(html: string, post: any, origin: string): string {
+    const isGrievance = post.type === 'grievance';
+    const pathPrefix = isGrievance ? 'grievance' : 'article';
+    const articleUrl = `${origin}/${pathPrefix}/${post.id}`;
+
+    const titleText = (post.titleHi || post.title || 'Story Today').trim();
+    let rawDesc = post.summary || post.content || '';
+    let description = stripHtml(rawDesc);
+    if (!description) {
+      description = isGrievance
+        ? `Citizen grievance in ${post.location?.city || 'local area'} published on Story Today.`
+        : `Read latest news report on Story Today.`;
+    }
+    if (description.length > 250) {
+      description = description.slice(0, 247) + '...';
+    }
+
+    const imageUrl = getAbsoluteImageUrl(post, origin);
+
+    const escTitle = escapeHtml(titleText);
+    const escDesc = escapeHtml(description);
+    const escUrl = escapeHtml(articleUrl);
+    const escImg = escapeHtml(imageUrl);
+    const escAuthor = escapeHtml(post.authorName || 'Story Today');
+    const escCategory = escapeHtml(post.category || (isGrievance ? 'Grievance' : 'News'));
+    const escTime = escapeHtml(post.createdAt || new Date().toISOString());
+
+    // Strip pre-existing generic tags so there are no conflicts or duplicate metadata
+    let cleanedHtml = html
+      .replace(/<title>[\s\S]*?<\/title>/gi, '')
+      .replace(/<meta\s+name=["']description["'][\s\S]*?>/gi, '')
+      .replace(/<meta\s+property=["']og:[^"']+["'][\s\S]*?>/gi, '')
+      .replace(/<meta\s+name=["']twitter:[^"']+["'][\s\S]*?>/gi, '')
+      .replace(/<link\s+rel=["']canonical["'][\s\S]*?>/gi, '');
+
+    const metaBlock = `
+    <title>${escTitle} | Story Today</title>
+    <meta name="description" content="${escDesc}" />
+    <link rel="canonical" href="${escUrl}" />
+
+    <!-- Open Graph (WhatsApp, Facebook, LinkedIn) -->
+    <meta property="og:site_name" content="Story Today" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="${escUrl}" />
+    <meta property="og:title" content="${escTitle}" />
+    <meta property="og:description" content="${escDesc}" />
+    <meta property="og:image" content="${escImg}" />
+    <meta property="og:image:secure_url" content="${escImg}" />
+    <meta property="og:image:alt" content="${escTitle}" />
+    <meta property="article:published_time" content="${escTime}" />
+    <meta property="article:author" content="${escAuthor}" />
+    <meta property="article:section" content="${escCategory}" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@storytoday" />
+    <meta name="twitter:url" content="${escUrl}" />
+    <meta name="twitter:title" content="${escTitle}" />
+    <meta name="twitter:description" content="${escDesc}" />
+    <meta name="twitter:image" content="${escImg}" />
+  `;
+
+    return cleanedHtml.replace('<head>', `<head>${metaBlock}`);
+  }
+
+  // Endpoint to serve image binary directly (especially for base64 uploaded post images)
+  app.get(['/api/posts/:id/image', '/api/posts/:id/image.jpg'], async (req, res) => {
+    try {
+      const postId = req.params.id;
+      let post = cachedPosts.find((p) => p.id === postId);
+      if (!post && db) {
+        try {
+          const snap = await getDoc(doc(db, 'posts', postId));
+          if (snap.exists()) post = snap.data();
+        } catch {}
+      }
+
+      if (!post || !post.imageUrl) {
+        return res.redirect(302, '/logo.svg');
+      }
+
+      const img = post.imageUrl.trim();
+      if (img.startsWith('data:image/')) {
+        const match = img.match(/^data:(image\/[a-zA-Z0-9\+\-\.]+);base64,(.+)$/);
+        if (match) {
+          const mime = match[1];
+          const buffer = Buffer.from(match[2], 'base64');
+          res.setHeader('Content-Type', mime);
+          res.setHeader('Content-Length', buffer.length);
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+          return res.end(buffer);
+        }
+      }
+
+      if (img.startsWith('http://') || img.startsWith('https://')) {
+        return res.redirect(302, img);
+      }
+
+      return res.redirect(302, img.startsWith('/') ? img : `/${img}`);
+    } catch (err) {
+      return res.redirect(302, '/logo.svg');
+    }
+  });
+
+  // Initialize Vite in dev mode
+  let vite: any = null;
   if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
+    vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
+  }
+
+  // Handler for article / grievance HTML requests with dynamic Open Graph tags
+  const renderArticlePage = async (
+    postId: string,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    try {
+      let post = cachedPosts.find((p) => p.id === postId);
+      if (!post && db) {
+        try {
+          const snap = await getDoc(doc(db, 'posts', postId));
+          if (snap.exists()) post = snap.data();
+        } catch (e) {
+          console.warn(`[OG Tags] Error fetching post ${postId}:`, e);
+        }
+      }
+
+      if (!post) {
+        return next();
+      }
+
+      const origin = getRequestOrigin(req);
+      const indexPath =
+        process.env.NODE_ENV !== 'production'
+          ? path.join(process.cwd(), 'index.html')
+          : path.join(process.cwd(), 'dist', 'index.html');
+
+      if (!fs.existsSync(indexPath)) {
+        return next();
+      }
+
+      let template = fs.readFileSync(indexPath, 'utf-8');
+      if (vite) {
+        template = await vite.transformIndexHtml(req.originalUrl, template);
+      }
+
+      const htmlWithMeta = injectPostMetaTags(template, post, origin);
+      res.status(200).set({ 'Content-Type': 'text/html; charset=utf-8' }).send(htmlWithMeta);
+    } catch (err) {
+      console.error('[OG Tags] Error serving article HTML:', err);
+      next();
+    }
+  };
+
+  // Attach routes for /article/:id, /grievance/:id, /post/:id BEFORE Vite/static fallbacks
+  app.get(
+    ['/article/:id', '/article/:id/*', '/grievance/:id', '/grievance/:id/*', '/post/:id', '/post/:id/*'],
+    async (req, res, next) => {
+      await renderArticlePage(req.params.id, req, res, next);
+    }
+  );
+
+  app.get('/', async (req, res, next) => {
+    const queryId = req.query.article || req.query.id || req.query.post || req.query.grievance;
+    if (typeof queryId === 'string' && queryId.trim() !== '') {
+      return await renderArticlePage(queryId.trim(), req, res, next);
+    }
+    next();
+  });
+
+  // Vite middleware for development vs static in production
+  if (process.env.NODE_ENV !== 'production') {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PostItem, Language } from '../types';
 import { translations } from '../i18n/translations';
 import { StoryTodayLogo } from './StoryTodayLogo';
-import { X, Copy, Check, Share2, Send, MessageCircle, Twitter, Facebook, ExternalLink, Printer } from 'lucide-react';
+import { X, Copy, Check, Share2, Send, MessageCircle, Twitter, Facebook, Linkedin, ExternalLink, Printer } from 'lucide-react';
 
 interface Props {
   post: PostItem;
@@ -69,6 +69,11 @@ export const ShareModal: React.FC<Props> = ({ post, lang, onClose }) => {
 
   const handleFacebook = () => {
     const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+    window.open(url, '_blank');
+  };
+
+  const handleLinkedIn = () => {
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
     window.open(url, '_blank');
   };
 
@@ -177,22 +182,44 @@ export const ShareModal: React.FC<Props> = ({ post, lang, onClose }) => {
             <span className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">
               Instant Share Channels
             </span>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
               <button
                 id="btn-share-whatsapp"
                 onClick={handleWhatsApp}
-                className="flex flex-col items-center justify-center p-3 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 transition-all text-center gap-1.5"
+                className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 transition-all text-center gap-1.5"
               >
-                <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                <div className="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-xs">
                   <MessageCircle className="w-4 h-4" />
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-wider">WhatsApp</span>
               </button>
 
               <button
+                id="btn-share-facebook"
+                onClick={handleFacebook}
+                className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 transition-all text-center gap-1.5"
+              >
+                <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                  <Facebook className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Facebook</span>
+              </button>
+
+              <button
+                id="btn-share-linkedin"
+                onClick={handleLinkedIn}
+                className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-900 transition-all text-center gap-1.5"
+              >
+                <div className="w-8 h-8 rounded-full bg-[#0A66C2] text-white flex items-center justify-center shadow-xs">
+                  <Linkedin className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider">LinkedIn</span>
+              </button>
+
+              <button
                 id="btn-share-twitter"
                 onClick={handleTwitter}
-                className="flex flex-col items-center justify-center p-3 rounded-lg border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-900 transition-all text-center gap-1.5"
+                className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-900 transition-all text-center gap-1.5"
               >
                 <div className="w-8 h-8 rounded-full bg-sky-500 text-white flex items-center justify-center shadow-xs">
                   <Twitter className="w-4 h-4" />
@@ -203,23 +230,12 @@ export const ShareModal: React.FC<Props> = ({ post, lang, onClose }) => {
               <button
                 id="btn-share-telegram"
                 onClick={handleTelegram}
-                className="flex flex-col items-center justify-center p-3 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-900 transition-all text-center gap-1.5"
+                className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-900 transition-all text-center gap-1.5 col-span-2 sm:col-span-1"
               >
                 <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-xs">
                   <Send className="w-4 h-4" />
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-wider">Telegram</span>
-              </button>
-
-              <button
-                id="btn-share-facebook"
-                onClick={handleFacebook}
-                className="flex flex-col items-center justify-center p-3 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 transition-all text-center gap-1.5"
-              >
-                <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-xs">
-                  <Facebook className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider">Facebook</span>
               </button>
             </div>
           </div>
