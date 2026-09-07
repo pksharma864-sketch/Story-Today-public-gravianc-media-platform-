@@ -39,6 +39,7 @@ export interface PostComment {
 
 export interface PostItem {
   id: string;
+  numericId?: number;
   type: PostType;
   title: string;
   titleHi?: string;

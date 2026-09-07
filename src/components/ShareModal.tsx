@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { PostItem, Language } from '../types';
 import { translations } from '../i18n/translations';
 import { StoryTodayLogo } from './StoryTodayLogo';
-import { printStory } from '../lib/printStory';
 import { X, Copy, Check, Share2, Send, MessageCircle, Twitter, Facebook, Linkedin, ExternalLink, Printer } from 'lucide-react';
 
 interface Props {
@@ -18,7 +17,8 @@ export const ShareModal: React.FC<Props> = ({ post, lang, onClose }) => {
   // Generate web URL
   const origin = window.location.origin;
   const pathPrefix = post.type === 'grievance' ? 'grievance' : 'article';
-  const shareUrl = `${origin}/${pathPrefix}/${post.id}`;
+  const postSlug = post.numericId ? String(post.numericId) : post.id;
+  const shareUrl = `${origin}/${pathPrefix}/${postSlug}`;
   
   const titleText = (lang === 'hi' && post.titleHi) ? post.titleHi : post.title;
   const shareMessage = `📢 [${post.type === 'grievance' ? 'जन शिकायत' : 'ताज़ा खबर'}] ${titleText}\n📍 ${post.location.city}${post.location.area ? `, ${post.location.area}` : ''}\n\n👉 पढ़ें Story Today पर: ${shareUrl}`;
@@ -83,10 +83,9 @@ export const ShareModal: React.FC<Props> = ({ post, lang, onClose }) => {
     window.open(url, '_blank');
   };
 
-  const handlePrint = (e?: React.MouseEvent) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-    printStory(post, lang);
+  const handlePrint = () => {
+    window.focus();
+    window.print();
   };
 
   return (

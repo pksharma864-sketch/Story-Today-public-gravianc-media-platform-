@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { PostItem, Language, GrievanceStatus, ApprovalStatus, UserAccount } from '../types';
 import { translations, categoriesMap, legacyCategoriesMap, getStatusText } from '../i18n/translations';
 import { GrievanceProgressBar } from './GrievanceProgressBar';
-import { printStory } from '../lib/printStory';
 import {
   ArrowLeft,
   Share2,
@@ -88,7 +87,8 @@ export const PostDetailView: React.FC<Props> = ({
     const origin = window.location.origin;
     const isGrievance = post.type === 'grievance';
     const pathPrefix = isGrievance ? 'grievance' : 'article';
-    const articleUrl = `${origin}/${pathPrefix}/${post.id}`;
+    const postSlug = post.numericId ? String(post.numericId) : post.id;
+    const articleUrl = `${origin}/${pathPrefix}/${postSlug}`;
 
     let imageUrl = (post.imageUrl || '').trim();
     if (!imageUrl) {
@@ -171,7 +171,8 @@ export const PostDetailView: React.FC<Props> = ({
     }
   );
 
-  const shareUrl = `${window.location.origin}/${isGrievance ? 'grievance' : 'article'}/${post.id}`;
+  const postSlug = post.numericId ? String(post.numericId) : post.id;
+  const shareUrl = `${window.location.origin}/${isGrievance ? 'grievance' : 'article'}/${postSlug}`;
 
   // Web Speech synthesis for audio reader
   const toggleSpeech = () => {
@@ -264,6 +265,11 @@ export const PostDetailView: React.FC<Props> = ({
     } finally {
       setIsApproving(false);
     }
+  };
+
+  const handlePrint = () => {
+    window.focus();
+    window.print();
   };
 
   return (
@@ -574,11 +580,7 @@ export const PostDetailView: React.FC<Props> = ({
             <button
               id="btn-print-view"
               type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                printStory(post, lang);
-              }}
+              onClick={handlePrint}
               className="p-2 bg-white/80 hover:bg-white text-[#856404] border border-[#FFD54F] rounded-md text-xs font-semibold cursor-pointer active:scale-95 transition-all"
               title={lang === 'hi' ? 'प्रिंट करें / Save as PDF' : 'Print Article / Save as PDF'}
             >

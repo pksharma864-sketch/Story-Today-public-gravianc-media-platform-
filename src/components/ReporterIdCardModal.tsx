@@ -974,6 +974,7 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
 
   // Browser Print Trigger
   const handlePrint = () => {
+    window.focus();
     window.print();
   };
 
@@ -1391,6 +1392,7 @@ export const ReporterIdCardModal: React.FC<ReporterIdCardModalProps> = ({
                     <>
                       <button
                         id="btn-print-id-card"
+                        type="button"
                         onClick={handlePrint}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 rounded-lg text-xs font-bold transition-colors shadow-xs cursor-pointer"
                         title="Print Identity Card"

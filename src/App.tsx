@@ -288,6 +288,13 @@ export default function App() {
         if (post) {
           setActivePost(post);
           setArticleNotFoundId(null);
+          // If the post has a numeric ID and the current URL does not match it, normalize the URL
+          const postSlug = post.numericId ? String(post.numericId) : post.id;
+          const pathPrefix = post.type === 'grievance' ? 'grievance' : 'article';
+          const canonicalPath = `/${pathPrefix}/${postSlug}`;
+          if (window.location.pathname !== canonicalPath && !window.location.search) {
+            window.history.replaceState({ postId: post.id }, '', canonicalPath);
+          }
         } else {
           setActivePost(null);
           setArticleNotFoundId(targetId);
@@ -350,7 +357,8 @@ export default function App() {
     setActivePost(post);
     setArticleNotFoundId(null);
     const pathPrefix = post.type === 'grievance' ? 'grievance' : 'article';
-    window.history.pushState({ postId: post.id }, '', `/${pathPrefix}/${post.id}`);
+    const postSlug = post.numericId ? String(post.numericId) : post.id;
+    window.history.pushState({ postId: post.id }, '', `/${pathPrefix}/${postSlug}`);
   };
 
   // Close Article View & restore URL to /

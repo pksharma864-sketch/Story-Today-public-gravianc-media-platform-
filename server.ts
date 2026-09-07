@@ -12,6 +12,7 @@ import {
   setDoc,
   deleteDoc,
   onSnapshot,
+  writeBatch,
   Firestore,
 } from 'firebase/firestore';
 
@@ -202,6 +203,7 @@ async function initFirestoreData() {
     if (!postsSnap.empty) {
       cachedPosts = postsSnap.docs.map((d) => d.data());
       console.log(`[Persistence] Loaded ${cachedPosts.length} posts permanently stored in Firestore.`);
+      await ensureNumericIds();
     } else {
       cachedPosts = [];
       console.log('[Persistence] Posts collection in Firestore is initialized and ready.');
@@ -387,6 +389,65 @@ async function removePost(postId: string) {
     } catch (err) {
       console.error(`[Firestore] FAILED to delete post ${postId}:`, err);
       throw err;
+    }
+  }
+}
+
+// Sequential Numeric ID Generation (e.g. 1001, 1002, 1003...)
+function getNextNumericId(): number {
+  let maxId = 1000;
+  for (const p of cachedPosts) {
+    if (typeof p.numericId === 'number' && p.numericId > maxId) {
+      maxId = p.numericId;
+    }
+  }
+  return maxId + 1;
+}
+
+async function ensureNumericIds() {
+  if (!cachedPosts || cachedPosts.length === 0) return;
+
+  let maxId = 1000;
+  for (const p of cachedPosts) {
+    if (typeof p.numericId === 'number' && p.numericId > maxId) {
+      maxId = p.numericId;
+    }
+  }
+
+  const unassigned = cachedPosts.filter((p) => typeof p.numericId !== 'number' || !p.numericId);
+  if (unassigned.length === 0) return;
+
+  // Sort unassigned chronologically (earliest createdAt first)
+  unassigned.sort((a, b) => {
+    const timeA = new Date(a.createdAt || 0).getTime();
+    const timeB = new Date(b.createdAt || 0).getTime();
+    return timeA - timeB;
+  });
+
+  console.log(`[NumericId] Assigning sequential numeric IDs (from ${maxId + 1}) to ${unassigned.length} articles...`);
+
+  for (const post of unassigned) {
+    maxId++;
+    post.numericId = maxId;
+  }
+
+  syncToLocalDisk();
+
+  if (db) {
+    try {
+      const batchSize = 400;
+      for (let i = 0; i < unassigned.length; i += batchSize) {
+        const chunk = unassigned.slice(i, i + batchSize);
+        const batch = writeBatch(db);
+        for (const post of chunk) {
+          const sanitized = sanitizeForFirestore(post);
+          batch.set(doc(db, 'posts', sanitized.id), sanitized);
+        }
+        await batch.commit();
+      }
+      console.log(`[NumericId] Successfully permanently saved numeric IDs for ${unassigned.length} articles to Firestore.`);
+    } catch (err) {
+      console.error('[NumericId] Error persisting numeric IDs to Firestore:', err);
     }
   }
 }
@@ -1317,15 +1378,17 @@ async function startServer() {
   // Get single post by ID
   app.get('/api/posts/:id', async (req, res) => {
     const { id } = req.params;
-    const postIndex = cachedPosts.findIndex((p) => p.id === id || String(p.id) === id);
+    const postIndex = cachedPosts.findIndex(
+      (p) => p.id === id || String(p.id) === id || String(p.numericId) === id
+    );
 
     if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    // Increment view count and persist
+    // Increment view count and persist in background
     cachedPosts[postIndex].views = (cachedPosts[postIndex].views || 0) + 1;
-    await persistPost(cachedPosts[postIndex]);
+    persistPost(cachedPosts[postIndex]).catch((e) => console.warn('Non-blocking view count update error:', e));
 
     res.json({ success: true, post: cachedPosts[postIndex] });
   });
@@ -1356,8 +1419,11 @@ async function startServer() {
       }
     }
 
+    const numericId = getNextNumericId();
+
     const newPost = {
       id,
+      numericId,
       type: body.type || 'news',
       title: body.title.trim(),
       titleHi: body.titleHi?.trim() || undefined,
@@ -1418,7 +1484,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: 'Invalid approval status' });
     }
 
-    const postIndex = cachedPosts.findIndex((p) => p.id === id);
+    const postIndex = cachedPosts.findIndex((p) => p.id === id || String(p.numericId) === id);
     if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
@@ -1450,7 +1516,7 @@ async function startServer() {
   // Upvote / Endorse
   app.post('/api/posts/:id/upvote', async (req, res) => {
     const { id } = req.params;
-    const postIndex = cachedPosts.findIndex((p) => p.id === id);
+    const postIndex = cachedPosts.findIndex((p) => p.id === id || String(p.numericId) === id);
 
     if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
@@ -1471,7 +1537,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: 'Comment text is required' });
     }
 
-    const postIndex = cachedPosts.findIndex((p) => p.id === id);
+    const postIndex = cachedPosts.findIndex((p) => p.id === id || String(p.numericId) === id);
     if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
@@ -1499,7 +1565,7 @@ async function startServer() {
     const { id } = req.params;
     const { status, note, officerName, department } = req.body;
 
-    const postIndex = cachedPosts.findIndex((p) => p.id === id);
+    const postIndex = cachedPosts.findIndex((p) => p.id === id || String(p.numericId) === id);
     if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
@@ -1536,7 +1602,7 @@ async function startServer() {
   // Update Post (Edit / Pin / Priority)
   app.put('/api/posts/:id', async (req, res) => {
     const { id } = req.params;
-    const postIndex = cachedPosts.findIndex((p) => p.id === id);
+    const postIndex = cachedPosts.findIndex((p) => p.id === id || String(p.numericId) === id);
 
     if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
@@ -1558,13 +1624,14 @@ async function startServer() {
   // Delete Post (Permanent from Firestore)
   app.delete('/api/posts/:id', async (req, res) => {
     const { id } = req.params;
-    const postIndex = cachedPosts.findIndex((p) => p.id === id);
+    const postIndex = cachedPosts.findIndex((p) => p.id === id || String(p.numericId) === id);
 
     if (postIndex === -1) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    await removePost(id);
+    const targetDocId = cachedPosts[postIndex].id;
+    await removePost(targetDocId);
     res.json({ success: true, message: 'Post deleted permanently from cloud database.' });
   });
 
@@ -1890,10 +1957,12 @@ async function startServer() {
         const finalAuthor = authorNameOverride?.trim() || item.author || 'P.K. Sharma';
 
         const postId = 'blog_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+        const numericId = getNextNumericId();
         const publishedDate = item.published || now;
 
         const newPost = {
           id: postId,
+          numericId,
           type: 'news',
           title: rawTitle,
           titleHi: isHindi ? rawTitle : undefined,
@@ -2074,7 +2143,7 @@ async function startServer() {
   app.get(['/api/posts/:id/image', '/api/posts/:id/image.jpg'], async (req, res) => {
     try {
       const postId = req.params.id;
-      let post = cachedPosts.find((p) => p.id === postId);
+      let post = cachedPosts.find((p) => p.id === postId || String(p.numericId) === postId);
       if (!post && db) {
         try {
           const snap = await getDoc(doc(db, 'posts', postId));
@@ -2126,7 +2195,7 @@ async function startServer() {
     next: express.NextFunction
   ) => {
     try {
-      let post = cachedPosts.find((p) => p.id === postId);
+      let post = cachedPosts.find((p) => p.id === postId || String(p.numericId) === postId);
       if (!post && db) {
         try {
           const snap = await getDoc(doc(db, 'posts', postId));

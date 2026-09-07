@@ -6,6 +6,7 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
+        "numericId": { "type": "number" },
         "type": { "type": "string", "enum": ["news", "grievance"] },
         "title": { "type": "string" },
         "titleHi": { "type": "string" },
