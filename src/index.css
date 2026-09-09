@@ -49,25 +49,152 @@
 }
 
 @media print {
+  /* Hide standard web headers, navigation, action buttons, modals, and screen-only controls */
   #main-header,
+  #bottom-nav,
   #btn-back-to-feed,
   #btn-detail-share,
   #btn-listen-audio,
-  footer,
+  footer:not(#article-print-footer),
   #btn-quick-copy-link,
   #btn-print-view,
   #btn-header-post,
   #share-modal-backdrop,
   #login-modal-backdrop,
-  #reporter-id-card-modal-backdrop,
   #user-profile-modal-backdrop,
-  .no-print {
+  .no-print,
+  .print-hidden {
     display: none !important;
   }
 
-  body {
-    background: white !important;
-    color: black !important;
+  /* Page setup for clean, professional paper printing */
+  @page {
+    size: A4 portrait;
+    margin: 15mm 15mm 15mm 15mm;
+  }
+
+  html, body {
+    background: #FFFFFF !important;
+    color: #111827 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Article print layout optimizations */
+  #post-detail-view,
+  #article-print-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #post-detail-view article,
+  #article-print-container article {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Story Today official logo in the print preview header area */
+  #article-print-header {
+    display: block !important;
+    margin-bottom: 18pt !important;
+    padding-bottom: 12pt !important;
+    border-bottom: 2pt solid #004D40 !important;
+    text-align: center !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  #article-print-header #story-today-official-logo,
+  #article-print-header #story-today-official-logo > div {
+    height: 52px !important;
+    max-height: 58px !important;
+    width: auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 auto !important;
+  }
+
+  #article-print-header img,
+  #article-print-header svg {
+    height: 52px !important;
+    max-height: 58px !important;
+    width: auto !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 0 auto !important;
+    filter: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Clean headings & images */
+  h1, h2, h3, h4 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    color: #111827 !important;
+  }
+
+  #post-detail-view h1,
+  #article-print-container h1 {
+    font-size: 20pt !important;
+    line-height: 1.25 !important;
+    margin-top: 6pt !important;
+    margin-bottom: 12pt !important;
+    color: #0F172A !important;
+  }
+
+  #post-detail-view img,
+  #article-print-container img {
+    max-height: 350px !important;
+    object-fit: cover !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    border-radius: 4pt !important;
+  }
+
+  /* Paragraph legibility and avoiding orphan lines */
+  p, blockquote {
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+
+  /* Reporter ID card printing support */
+  body:has(#reporter-id-card-modal-backdrop) #main-content,
+  body:has(#reporter-id-card-modal-backdrop) #post-detail-view,
+  body:has(#reporter-id-card-modal-backdrop) #article-print-container {
+    display: none !important;
+  }
+
+  #reporter-id-card-modal-backdrop {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  #reporter-id-card-modal-backdrop #reporter-id-card-modal {
+    box-shadow: none !important;
+    border: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  #reporter-id-card-modal-backdrop #reporter-id-card-modal > div:first-child,
+  #reporter-id-card-modal-backdrop #reporter-id-card-modal .border-b,
+  #reporter-id-card-modal-backdrop button {
+    display: none !important;
   }
 }
 

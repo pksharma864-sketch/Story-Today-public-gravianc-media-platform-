@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PostItem, Language, GrievanceStatus, ApprovalStatus, UserAccount } from '../types';
 import { translations, categoriesMap, legacyCategoriesMap, getStatusText } from '../i18n/translations';
 import { GrievanceProgressBar } from './GrievanceProgressBar';
+import { StoryTodayLogo } from './StoryTodayLogo';
 import {
   ArrowLeft,
   Share2,
@@ -275,7 +276,7 @@ export const PostDetailView: React.FC<Props> = ({
   return (
     <div id="post-detail-view" className="max-w-3xl mx-auto px-4 sm:px-6 py-6 animate-in fade-in duration-200">
       {/* Top Navigation & Action Bar */}
-      <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#E0E0E0]">
+      <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#E0E0E0] print:hidden">
         <button
           id="btn-back-to-feed"
           onClick={onBack}
@@ -324,7 +325,7 @@ export const PostDetailView: React.FC<Props> = ({
 
       {/* Editorial Approval Status Banner */}
       {post.approvalStatus === 'pending' && (
-        <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-300 shadow-xs space-y-3">
+        <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-300 shadow-xs space-y-3 print:hidden">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <Clock className="w-5 h-5 text-amber-700 shrink-0" />
@@ -393,7 +394,7 @@ export const PostDetailView: React.FC<Props> = ({
       )}
 
       {post.approvalStatus === 'rejected' && (
-        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-300 text-red-900 text-xs space-y-1">
+        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-300 text-red-900 text-xs space-y-1 print:hidden">
           <div className="flex items-center gap-2 font-bold uppercase tracking-wider">
             <XCircle className="w-4 h-4 text-red-700" />
             <span>Post Rejected by Editorial Admin</span>
@@ -407,7 +408,46 @@ export const PostDetailView: React.FC<Props> = ({
       )}
 
       {/* Article Article Container */}
-      <article className="bg-white rounded-xl border border-[#E0E0E0] shadow-xs p-6 sm:p-10">
+      <article className="bg-white rounded-xl border border-[#E0E0E0] shadow-xs p-6 sm:p-10 print:border-none print:shadow-none print:p-0 print:m-0 print:rounded-none">
+        {/* =========================================================================
+         * ARTICLE PRINT HEADER (Only visible in Browser Print / window.print)
+         * 1. Story Today logo clearly at top of printed page
+         * 2. Below the logo, site name: Story Today
+         * 3. Network tagline, story ID, location & date metadata
+         * ========================================================================= */}
+        <header id="article-print-header" className="hidden print:block mb-6 pb-4 border-b-2 border-[#004D40] text-center">
+          {/* 1. Official Story Today Logo */}
+          <div className="flex justify-center items-center mb-2.5">
+            <StoryTodayLogo size="xl" className="mx-auto" />
+          </div>
+
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-gray-600 mt-1.5 mb-2.5">
+            {lang === 'hi'
+              ? 'राष्ट्रीय एवं प्रांतीय स्वतंत्र पत्रकारिता मंच • जन शिकायत एवं समाचार'
+              : 'Independent News & Citizen Grievance Network'}
+          </p>
+
+          {/* Publication / Metadata details */}
+          <div className="flex items-center justify-between text-[11px] text-gray-500 font-medium pt-2 border-t border-gray-200">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-[#004D40]">www.story-today.in</span>
+              <span>•</span>
+              <span className="uppercase font-semibold tracking-wider text-gray-700">
+                {isGrievance
+                  ? (lang === 'hi' ? 'जन शिकायत' : 'Citizen Grievance')
+                  : (lang === 'hi' ? 'समाचार / लेख' : 'News Article')}
+              </span>
+              {post.numericId && <span className="font-bold text-gray-900">• #{post.numericId}</span>}
+              {post.referenceNumber && <span>• Ref: {post.referenceNumber}</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <span>📍 {post.location.city}{post.location.area ? `, ${post.location.area}` : ''}</span>
+              <span>•</span>
+              <span>{formattedDate}</span>
+            </div>
+          </div>
+        </header>
+
         {/* Breaking / Urgency Alert */}
         {post.isBreaking && (
           <div className="mb-4 bg-red-700 text-white px-3.5 py-1.5 rounded text-xs font-bold uppercase tracking-widest flex items-center gap-2">
@@ -417,7 +457,7 @@ export const PostDetailView: React.FC<Props> = ({
         )}
 
         {/* Editorial Eyebrow */}
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4 print:hidden">
           <p className="text-[#004D40] font-bold text-xs uppercase tracking-[0.2em]">
             {isGrievance
               ? lang === 'hi'
@@ -440,14 +480,14 @@ export const PostDetailView: React.FC<Props> = ({
         </div>
 
         {/* Headline */}
-        <h1 className="text-2xl sm:text-4xl font-serif font-bold text-[#1A1A1A] leading-[1.15] mb-6">
+        <h1 className="text-2xl sm:text-4xl font-serif font-bold text-[#1A1A1A] leading-[1.15] mb-6 print:text-2xl print:leading-tight print:mb-4 print:text-gray-950">
           {title}
         </h1>
 
         {/* Author, Location, Date Meta Row */}
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-8 pb-6 border-b border-gray-100">
+        <div className="flex items-center justify-between flex-wrap gap-4 mb-8 pb-6 border-b border-gray-100 print:mb-4 print:pb-3 print:border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="w-11 h-11 rounded-full overflow-hidden bg-[#004D40] text-white flex items-center justify-center font-bold text-xs shadow-xs border border-gray-300 shrink-0">
+            <div className="w-11 h-11 rounded-full overflow-hidden bg-[#004D40] text-white flex items-center justify-center font-bold text-xs shadow-xs border border-gray-300 shrink-0 print:hidden">
               {post.authorAvatar ? (
                 <img
                   src={post.authorAvatar}
@@ -461,11 +501,11 @@ export const PostDetailView: React.FC<Props> = ({
             </div>
             <div className="text-xs">
               <p className="font-bold uppercase tracking-wider text-[#1A1A1A]">{post.authorName}</p>
-              <p className="text-gray-400 text-[11px]">{post.authorRole || (isGrievance ? 'Citizen' : 'Reporter')} • {formattedDate}</p>
+              <p className="text-gray-400 text-[11px] print:text-gray-600">{post.authorRole || (isGrievance ? 'Citizen' : 'Reporter')} • {formattedDate}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-[#FAFAFA] px-3 py-1.5 rounded-md border border-[#E0E0E0]">
+          <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-[#FAFAFA] px-3 py-1.5 rounded-md border border-[#E0E0E0] print:border-none print:p-0 print:bg-transparent">
             <MapPin className="w-3.5 h-3.5 text-[#004D40]" />
             <span>
               {post.location.city}
@@ -478,11 +518,11 @@ export const PostDetailView: React.FC<Props> = ({
 
         {/* Image Display */}
         {post.imageUrl && (
-          <div className="mb-8 rounded-lg overflow-hidden bg-gray-100 border border-[#E0E0E0]">
+          <div className="mb-8 rounded-lg overflow-hidden bg-gray-100 border border-[#E0E0E0] print:border-none print:mb-4 print:bg-transparent">
             <img
               src={post.imageUrl}
               alt={title}
-              className="w-full max-h-[440px] object-cover"
+              className="w-full max-h-[440px] object-cover print:max-h-[350px] print:rounded"
               referrerPolicy="no-referrer"
             />
           </div>
@@ -490,21 +530,23 @@ export const PostDetailView: React.FC<Props> = ({
 
         {/* Grievance Progress Stepper if grievance */}
         {isGrievance && (
-          <GrievanceProgressBar
-            status={post.status || 'submitted'}
-            lang={lang}
-            history={post.statusHistory}
-          />
+          <div className="print:hidden">
+            <GrievanceProgressBar
+              status={post.status || 'submitted'}
+              lang={lang}
+              history={post.statusHistory}
+            />
+          </div>
         )}
 
         {/* Article Body Content with Editorial Lead */}
         {post.summary && (
-          <p className="text-lg italic font-serif text-gray-600 mb-6 leading-relaxed border-l-2 border-[#004D40] pl-4">
+          <p className="text-lg italic font-serif text-gray-600 mb-6 leading-relaxed border-l-2 border-[#004D40] pl-4 print:text-sm print:mb-3 print:text-gray-800">
             {post.summary}
           </p>
         )}
 
-        <div className="prose prose-slate max-w-none text-[#1A1A1A] text-sm sm:text-base leading-relaxed whitespace-pre-line my-6">
+        <div className="prose prose-slate max-w-none text-[#1A1A1A] text-sm sm:text-base leading-relaxed whitespace-pre-line my-6 print:text-sm print:my-4 print:leading-relaxed print:text-gray-900">
           {content}
         </div>
 
@@ -532,17 +574,17 @@ export const PostDetailView: React.FC<Props> = ({
 
         {/* Official Response Box if available */}
         {post.officialResponse && (
-          <div className="my-6 bg-[#E0F2F1]/40 border border-[#B2DFDB] rounded-lg p-5">
+          <div className="my-6 bg-[#E0F2F1]/40 border border-[#B2DFDB] rounded-lg p-5 print:my-4 print:p-4 print:bg-gray-50 print:border-gray-300">
             <div className="flex items-center gap-2 mb-2">
               <Building2 className="w-4 h-4 text-[#004D40]" />
               <h4 className="text-xs font-bold uppercase tracking-widest text-[#004D40]">
                 {lang === 'hi' ? 'प्रशासनिक जवाब व आधिकारिक अपडेट' : 'Official Administration Response'}
               </h4>
             </div>
-            <p className="text-xs sm:text-sm text-[#004D40] leading-relaxed font-medium">
+            <p className="text-xs sm:text-sm text-[#004D40] leading-relaxed font-medium print:text-gray-900">
               "{post.officialResponse.message}"
             </p>
-            <div className="flex items-center justify-between text-[11px] text-[#00796B] mt-3 pt-2 border-t border-[#B2DFDB]">
+            <div className="flex items-center justify-between text-[11px] text-[#00796B] mt-3 pt-2 border-t border-[#B2DFDB] print:text-gray-600 print:border-gray-300">
               <span>{post.officialResponse.department} {post.officialResponse.officerName ? `• ${post.officialResponse.officerName}` : ''}</span>
               <span>{new Date(post.officialResponse.timestamp).toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-US')}</span>
             </div>
@@ -550,7 +592,7 @@ export const PostDetailView: React.FC<Props> = ({
         )}
 
         {/* Editorial Shareable Browser Link Banner */}
-        <div className="my-6 bg-[#FFF8E1] border border-[#FFD54F] p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[#856404]">
+        <div className="my-6 bg-[#FFF8E1] border border-[#FFD54F] p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[#856404] print:hidden">
           <div className="overflow-hidden">
             <p className="text-[10px] font-bold text-[#856404] uppercase tracking-wider">
               {lang === 'hi' ? 'शेयर करने योग्य लिंक' : 'Shareable Browser Link'}
@@ -590,7 +632,7 @@ export const PostDetailView: React.FC<Props> = ({
         </div>
 
         {/* Citizen Endorsement & Reactions */}
-        <div className="my-6 p-4 rounded-lg bg-[#FAFAFA] border border-[#E0E0E0] flex flex-wrap items-center justify-between gap-3">
+        <div className="my-6 p-4 rounded-lg bg-[#FAFAFA] border border-[#E0E0E0] flex flex-wrap items-center justify-between gap-3 print:hidden">
           <button
             id="btn-detail-upvote"
             onClick={() => onUpvote(post.id)}
@@ -623,7 +665,7 @@ export const PostDetailView: React.FC<Props> = ({
 
         {/* Admin Controls Panel if Admin */}
         {isAdmin && (
-          <div className="my-6 p-4 sm:p-5 rounded-xl bg-amber-50/70 border border-amber-300">
+          <div className="my-6 p-4 sm:p-5 rounded-xl bg-amber-50/70 border border-amber-300 print:hidden">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-amber-700" />
@@ -726,7 +768,7 @@ export const PostDetailView: React.FC<Props> = ({
         )}
 
         {/* Public Comments / Citizen Updates */}
-        <section className="mt-8 pt-6 border-t border-[#E0E0E0]">
+        <section className="mt-8 pt-6 border-t border-[#E0E0E0] print:hidden">
           <div className="flex items-center gap-2 mb-4">
             <MessageSquare className="w-4 h-4 text-[#004D40]" />
             <h3 className="text-xs font-bold text-gray-900 uppercase tracking-widest">
@@ -804,6 +846,18 @@ export const PostDetailView: React.FC<Props> = ({
             )}
           </div>
         </section>
+
+        {/* Professional Print-Only Footer */}
+        <footer id="article-print-footer" className="hidden print:flex flex-col sm:flex-row items-center justify-between gap-2 pt-4 mt-8 border-t border-gray-300 text-[10px] text-gray-500">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-gray-800">Story Today</span>
+            <span>•</span>
+            <span>Online Edition: <strong>{shareUrl}</strong></span>
+          </div>
+          <div>
+            <span>© {new Date().getFullYear()} Story Today • All rights reserved</span>
+          </div>
+        </footer>
       </article>
     </div>
   );

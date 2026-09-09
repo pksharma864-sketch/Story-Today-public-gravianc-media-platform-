@@ -728,9 +728,30 @@ export default function App() {
               isUpvoted={upvotedIds.includes(activePost.id)}
             />
           ) : (
-            /* Feed / Explorer View Mode */
-            <div className="space-y-6">
-              {/* Top Banner / Quick Action Bar */}
+            <>
+              {/* If printing from Share modal on feed, render the article in clean print layout */}
+              {sharePost && (
+                <div id="article-print-container" className="hidden print:block">
+                  <PostDetailView
+                    post={sharePost}
+                    lang={lang}
+                    isAdmin={false}
+                    currentUser={currentUser}
+                    onBack={() => {}}
+                    onShare={() => {}}
+                    onUpvote={() => {}}
+                    onAddComment={() => {}}
+                    onUpdateStatus={() => {}}
+                    onDeletePost={() => {}}
+                    onTogglePin={() => {}}
+                    isUpvoted={false}
+                  />
+                </div>
+              )}
+
+              {/* Feed / Explorer View Mode */}
+              <div className={`space-y-6 ${sharePost ? 'print:hidden' : ''}`}>
+                {/* Top Banner / Quick Action Bar */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-[#E0E0E0] shadow-xs">
                 <div>
                   <p className="text-[10px] font-bold text-[#004D40] uppercase tracking-[0.2em] mb-1">
@@ -838,6 +859,7 @@ export default function App() {
                 </>
               )}
             </div>
+            </>
           )}
         </main>
 
