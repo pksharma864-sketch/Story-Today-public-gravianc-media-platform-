@@ -2187,6 +2187,9 @@ async function startServer() {
     });
   }
 
+  // Serve public static assets (favicons, logos, manifests, icons)
+  app.use(express.static(path.join(process.cwd(), 'public')));
+
   // Handler for article / grievance HTML requests with dynamic Open Graph tags
   const renderArticlePage = async (
     postId: string,

@@ -4,10 +4,28 @@
   "description": "Hyperlocal citizen news publishing and ward-level grievance resolution platform.",
   "icons": [
     {
-      "src": "/logo.svg",
+      "src": "/favicon.svg",
       "type": "image/svg+xml",
-      "sizes": "192x192 512x512",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "type": "image/png",
+      "sizes": "32x32",
+      "purpose": "any"
     }
   ],
   "start_url": "/",

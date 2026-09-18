@@ -422,9 +422,7 @@ export const PostDetailView: React.FC<Props> = ({
           </div>
 
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-gray-600 mt-1.5 mb-2.5">
-            {lang === 'hi'
-              ? 'राष्ट्रीय एवं प्रांतीय स्वतंत्र पत्रकारिता मंच • जन शिकायत एवं समाचार'
-              : 'Independent News & Citizen Grievance Network'}
+            PR / Media & News Network
           </p>
 
           {/* Publication / Metadata details */}
