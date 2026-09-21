@@ -101,11 +101,92 @@ function sanitizeForFirestore(obj: any): any {
   return obj;
 }
 
+function escapeXml(unsafe: string): string {
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function formatSitemapDate(dateVal?: any): string {
+  if (!dateVal) return new Date().toISOString();
+  try {
+    const d = new Date(dateVal);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString();
+    }
+  } catch {}
+  return new Date().toISOString();
+}
+
+function generateSitemapXml(baseUrl: string = 'https://story-today.ai.studio'): string {
+  const cleanBase = baseUrl.replace(/\/+$/, '');
+  const publishedPosts = cachedPosts.filter(
+    (p) => (p.approvalStatus || 'approved') === 'approved'
+  );
+
+  const sortedPosts = [...publishedPosts].sort((a, b) => {
+    const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return timeB - timeA;
+  });
+
+  const latestDate = sortedPosts.length > 0
+    ? formatSitemapDate(sortedPosts[0].updatedAt || sortedPosts[0].createdAt)
+    : new Date().toISOString();
+
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+  // Homepage: https://story-today.ai.studio
+  xml += '  <url>\n';
+  xml += `    <loc>${escapeXml(cleanBase)}</loc>\n`;
+  xml += `    <lastmod>${latestDate}</lastmod>\n`;
+  xml += '    <changefreq>hourly</changefreq>\n';
+  xml += '    <priority>1.0</priority>\n';
+  xml += '  </url>\n';
+
+  // Published articles
+  for (const post of sortedPosts) {
+    const isGrievance = post.type === 'grievance';
+    const pathPrefix = isGrievance ? 'grievance' : 'article';
+    const postSlug = post.numericId ? String(post.numericId) : post.id;
+    const postUrl = `${cleanBase}/${pathPrefix}/${postSlug}`;
+    const lastMod = formatSitemapDate(post.updatedAt || post.createdAt);
+
+    xml += '  <url>\n';
+    xml += `    <loc>${escapeXml(postUrl)}</loc>\n`;
+    xml += `    <lastmod>${lastMod}</lastmod>\n`;
+    xml += '    <changefreq>daily</changefreq>\n';
+    xml += '    <priority>0.8</priority>\n';
+    xml += '  </url>\n';
+  }
+
+  xml += '</urlset>';
+  return xml;
+}
+
+function syncSitemapFile() {
+  try {
+    const publicDir = path.join(process.cwd(), 'public');
+    if (!fs.existsSync(publicDir)) {
+      fs.mkdirSync(publicDir, { recursive: true });
+    }
+    const xml = generateSitemapXml('https://story-today.ai.studio');
+    fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), xml, 'utf-8');
+  } catch (err) {
+    console.warn('[Sitemap] Could not sync static public/sitemap.xml:', err);
+  }
+}
+
 function syncToLocalDisk() {
   try {
     fs.writeFileSync(USERS_FILE, JSON.stringify(cachedUsers, null, 2), 'utf-8');
     fs.writeFileSync(DATA_FILE, JSON.stringify(cachedPosts, null, 2), 'utf-8');
     fs.writeFileSync(ID_CARDS_FILE, JSON.stringify(cachedIdCards, null, 2), 'utf-8');
+    syncSitemapFile();
   } catch (err) {
     console.error('[Persistence] Error writing local cache backup:', err);
   }
@@ -204,6 +285,7 @@ async function initFirestoreData() {
       cachedPosts = postsSnap.docs.map((d) => d.data());
       console.log(`[Persistence] Loaded ${cachedPosts.length} posts permanently stored in Firestore.`);
       await ensureNumericIds();
+      syncSitemapFile();
     } else {
       cachedPosts = [];
       console.log('[Persistence] Posts collection in Firestore is initialized and ready.');
@@ -1288,6 +1370,10 @@ async function startServer() {
   app.post('/api/settings/logo', async (req, res) => {
     const { logo } = req.body;
     await persistAdminSettings({ customLogo: logo || '/logo.svg' });
+    try {
+      const { exec } = await import('child_process');
+      exec('node scripts/generate-favicons.cjs');
+    } catch {}
     res.json({ success: true, message: 'Branding logo updated permanently.' });
   });
 
@@ -2186,6 +2272,68 @@ async function startServer() {
       appType: 'spa',
     });
   }
+
+  // XML Sitemap for Google Search Console & Search Engines
+  app.get(['/sitemap.xml', '/sitemap'], (req, res) => {
+    try {
+      const host = req.get('host') || '';
+      let baseUrl = 'https://story-today.ai.studio';
+      if (host.includes('story-today.in')) {
+        baseUrl = 'https://story-today.in';
+      } else {
+        baseUrl = 'https://story-today.ai.studio';
+      }
+
+      const xml = generateSitemapXml(baseUrl);
+      res.status(200).set({
+        'Content-Type': 'application/xml; charset=utf-8',
+        'Cache-Control': 'public, max-age=300, s-maxage=600',
+        'X-Robots-Tag': 'all',
+      }).send(xml);
+    } catch (err) {
+      console.error('[Sitemap] Error generating sitemap.xml:', err);
+      res.status(500).set({ 'Content-Type': 'text/plain; charset=utf-8' }).send('Error generating sitemap');
+    }
+  });
+
+  // Robots.txt directing crawlers to /sitemap.xml
+  app.get('/robots.txt', (req, res) => {
+    const host = req.get('host') || '';
+    const domain = host.includes('story-today.in') ? 'https://story-today.in' : 'https://story-today.ai.studio';
+    const txt = `User-agent: *\nAllow: /\n\nSitemap: ${domain}/sitemap.xml\n`;
+    res.status(200).set({ 'Content-Type': 'text/plain; charset=utf-8' }).send(txt);
+  });
+
+  // Explicit handler for favicon and icons with Googlebot-Image crawler optimization
+  app.get(
+    [
+      '/favicon.ico',
+      '/favicon.png',
+      '/favicon.svg',
+      '/favicon-:size.png',
+      '/apple-touch-icon.png',
+      '/apple-touch-icon-precomposed.png',
+    ],
+    (req, res, next) => {
+      let filename = req.path.replace(/^\//, '');
+      if (filename === 'apple-touch-icon-precomposed.png') {
+        filename = 'apple-touch-icon.png';
+      }
+      const filePath = path.join(process.cwd(), 'public', filename);
+      if (fs.existsSync(filePath)) {
+        let mime = 'image/png';
+        if (filename.endsWith('.ico')) mime = 'image/x-icon';
+        else if (filename.endsWith('.svg')) mime = 'image/svg+xml';
+
+        res.setHeader('Content-Type', mime);
+        res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('X-Robots-Tag', 'all');
+        return res.sendFile(filePath);
+      }
+      next();
+    }
+  );
 
   // Serve public static assets (favicons, logos, manifests, icons)
   app.use(express.static(path.join(process.cwd(), 'public')));
