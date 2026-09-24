@@ -4,6 +4,7 @@ import { translations, categoriesMap, legacyCategoriesMap, getStatusText } from 
 import { GrievanceProgressBar } from './GrievanceProgressBar';
 import { StoryTodayLogo } from './StoryTodayLogo';
 import { AdsterraBanner } from './AdsterraBanner';
+import { AdsterraRectangle } from './AdsterraRectangle';
 import {
   ArrowLeft,
   Share2,
@@ -175,6 +176,97 @@ export const PostDetailView: React.FC<Props> = ({
 
   const postSlug = post.numericId ? String(post.numericId) : post.id;
   const shareUrl = `${window.location.origin}/${isGrievance ? 'grievance' : 'article'}/${postSlug}`;
+
+  // Split article content into clean paragraphs for typography and natural ad placement
+  const paragraphs = React.useMemo(() => {
+    if (!content || !content.trim()) return [];
+
+    // Split by double newlines first
+    let list = content
+      .split(/\r?\n\s*\r?\n+/)
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
+
+    // If fewer than 4 paragraphs, check if single newlines give 4+ clean paragraphs
+    if (list.length < 4) {
+      const singleLines = content
+        .split(/\r?\n+/)
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0);
+      if (singleLines.length >= 4) {
+        list = singleLines;
+      }
+    }
+
+    // If still fewer than 4 paragraphs, split long paragraphs (> 220 chars) at natural sentence boundaries
+    if (list.length < 4) {
+      const refined: string[] = [];
+      for (const para of list) {
+        if (para.length > 220 && /[.?!।]\s+/.test(para)) {
+          const sentences = para.split(/(?<=[.?!।])\s+/).filter((s) => s.trim().length > 0);
+          if (sentences.length >= 2) {
+            let currentChunk: string[] = [];
+            for (let i = 0; i < sentences.length; i++) {
+              currentChunk.push(sentences[i]);
+              if (currentChunk.join(' ').length > 180 && i < sentences.length - 1) {
+                refined.push(currentChunk.join(' '));
+                currentChunk = [];
+              }
+            }
+            if (currentChunk.length > 0) {
+              refined.push(currentChunk.join(' '));
+            }
+            continue;
+          }
+        }
+        refined.push(para);
+      }
+      if (refined.length >= list.length) {
+        list = refined;
+      }
+    }
+
+    return list;
+  }, [content]);
+
+  // Compute 3 to 4 distinct ad positions between paragraphs
+  const adPositions = React.useMemo(() => {
+    const total = paragraphs.length;
+    const positions = new Set<number>();
+    if (total <= 0) return positions;
+
+    if (total >= 7) {
+      // 4 ads: after 2nd paragraph, middle, lower half, end
+      positions.add(1); // after 2nd paragraph
+      positions.add(Math.floor(total * 0.45)); // middle
+      positions.add(Math.floor(total * 0.72)); // lower half
+      positions.add(total - 1); // before end/comments
+    } else if (total >= 5) {
+      // 4 ads
+      positions.add(0); // after 1st paragraph
+      positions.add(Math.floor(total / 2)); // middle
+      positions.add(total - 2); // lower half
+      positions.add(total - 1); // before end
+    } else if (total === 4) {
+      // 3 to 4 ads
+      positions.add(0);
+      positions.add(1);
+      positions.add(2);
+      positions.add(3);
+    } else if (total === 3) {
+      // 3 ads
+      positions.add(0);
+      positions.add(1);
+      positions.add(2);
+    } else if (total === 2) {
+      positions.add(0);
+      positions.add(1);
+    } else {
+      positions.add(0);
+    }
+
+    return positions;
+  }, [paragraphs.length]);
 
   // Web Speech synthesis for audio reader
   const toggleSpeech = () => {
@@ -541,15 +633,33 @@ export const PostDetailView: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Article Body Content with Editorial Lead */}
+        {/* Article Body Content with Editorial Lead & In-Article 300x250 Ads */}
         {post.summary && (
           <p className="text-lg italic font-serif text-gray-600 mb-6 leading-relaxed border-l-2 border-[#004D40] pl-4 print:text-sm print:mb-3 print:text-gray-800">
             {post.summary}
           </p>
         )}
 
-        <div className="prose prose-slate max-w-none text-[#1A1A1A] text-sm sm:text-base leading-relaxed whitespace-pre-line my-6 print:text-sm print:my-4 print:leading-relaxed print:text-gray-900">
-          {content}
+        <div className="article-body-content text-[#1A1A1A] text-sm sm:text-base leading-relaxed my-6 print:text-sm print:my-4 print:leading-relaxed print:text-gray-900">
+          {paragraphs.length > 0 ? (
+            paragraphs.map((para, idx) => (
+              <React.Fragment key={idx}>
+                <p className="mb-4 text-[#1A1A1A] text-sm sm:text-base leading-relaxed font-normal whitespace-pre-line">
+                  {para}
+                </p>
+                {adPositions.has(idx) && (
+                  <AdsterraRectangle
+                    slotId={`article-${post.id}-${idx + 1}`}
+                    className="my-6 sm:my-8"
+                  />
+                )}
+              </React.Fragment>
+            ))
+          ) : (
+            <div className="whitespace-pre-line text-sm sm:text-base leading-relaxed">
+              {content}
+            </div>
+          )}
         </div>
 
         {/* Source Citation for Imported Articles */}
