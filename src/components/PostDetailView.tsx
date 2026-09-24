@@ -3,6 +3,7 @@ import { PostItem, Language, GrievanceStatus, ApprovalStatus, UserAccount } from
 import { translations, categoriesMap, legacyCategoriesMap, getStatusText } from '../i18n/translations';
 import { GrievanceProgressBar } from './GrievanceProgressBar';
 import { StoryTodayLogo } from './StoryTodayLogo';
+import { AdsterraBanner } from './AdsterraBanner';
 import {
   ArrowLeft,
   Share2,
@@ -525,6 +526,9 @@ export const PostDetailView: React.FC<Props> = ({
             />
           </div>
         )}
+
+        {/* Adsterra 728x90 Banner Ad - After article image / near top of content */}
+        <AdsterraBanner slotId="article-detail-top" />
 
         {/* Grievance Progress Stepper if grievance */}
         {isGrievance && (

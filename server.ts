@@ -2319,6 +2319,20 @@ async function startServer() {
     }).send(content);
   });
 
+  // Adsterra 728x90 Banner Ad container
+  app.get('/ad-banner-728x90.html', (req, res) => {
+    const filePath = path.join(process.cwd(), 'public', 'ad-banner-728x90.html');
+    if (fs.existsSync(filePath)) {
+      res.status(200).set({
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+        'Access-Control-Allow-Origin': '*',
+      }).sendFile(filePath);
+    } else {
+      res.status(404).send('Not found');
+    }
+  });
+
   // Explicit handler for favicon and icons with Googlebot-Image crawler optimization
   app.get(
     [

@@ -32,6 +32,7 @@ import { ReporterIdCardModal } from './components/ReporterIdCardModal';
 import { MobileFrame } from './components/MobileFrame';
 import { StoryTodayLogo } from './components/StoryTodayLogo';
 import { SplashScreen } from './components/SplashScreen';
+import { AdsterraBanner } from './components/AdsterraBanner';
 import {
   Plus,
   Filter,
@@ -782,6 +783,9 @@ export default function App() {
                   </button>
                 </div>
               </div>
+
+              {/* Adsterra 728x90 Banner Ad - Below PR / Media & News Network heading, above news cards */}
+              <AdsterraBanner slotId="home-feed-top" />
 
               {/* Stories / Grievances Grid */}
               {isLoading ? (
