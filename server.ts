@@ -2304,6 +2304,21 @@ async function startServer() {
     res.status(200).set({ 'Content-Type': 'text/plain; charset=utf-8' }).send(txt);
   });
 
+  // Google AdSense ads.txt specification
+  app.get('/ads.txt', (req, res) => {
+    const filePath = path.join(process.cwd(), 'public', 'ads.txt');
+    let content = 'google.com, pub-9766249948692348, DIRECT, f08c47fec0942fa0\n';
+    if (fs.existsSync(filePath)) {
+      content = fs.readFileSync(filePath, 'utf-8');
+    }
+    res.status(200).set({
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+      'Access-Control-Allow-Origin': '*',
+      'X-Robots-Tag': 'all',
+    }).send(content);
+  });
+
   // Explicit handler for favicon and icons with Googlebot-Image crawler optimization
   app.get(
     [
